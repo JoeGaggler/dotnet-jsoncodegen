@@ -1,0 +1,98 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "publish",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "dotnet run",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--",
+                "--input",
+                "Sample.txt",
+                "--output",
+                "SampleSerializer.cs",
+                "--class",
+                "Pingmint.CodeGen.Json.Test.SampleSerializer",
+                "-m"
+            ],
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
+            }
+        },
+        {
+            "label": "dotnet pack",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "pack"
+            ],
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
+            }
+        },
+        {
+            "label": "dotnet tool install (nupkg)",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "tool",
+                "install",
+                "--add-source",
+                "nupkg",
+                "pingmint.codegen.json"
+            ],
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
+            }
+        },
+        {
+            "label": "build and run",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"build",
+				"dotnet run"
+			],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}
