@@ -2,6 +2,7 @@ namespace Pingmint.CodeGen.Json.Model.Code;
 
 public class Root
 {
+    public String FileNamespace => ClassNamespace; // just in case these would vary in the future
     public String ClassNamespace { get; set; }
     public String ClassName { get; set; }
     public String ClassFullName => $"{ClassNamespace}.{ClassName}";

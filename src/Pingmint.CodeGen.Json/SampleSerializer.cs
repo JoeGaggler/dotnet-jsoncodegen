@@ -10,9 +10,36 @@ partial interface IJsonSerializer<T>
 }
 sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
 {
-	private static readonly IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample> Instance0 = new Pingmint.CodeGen.Json.Test.SampleSerializer();
+	private static readonly IJsonSerializer<Sample> Instance0 = new SampleSerializer();
 
-	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException();
+	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+
+	void IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Serialize(ref Utf8JsonWriter writer, Pingmint.CodeGen.Json.Test.Sample value)
+	{
+		if (value is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartObject();
+		if (value.Items is { } localItems)
+		{
+			writer.WritePropertyName("items");
+			InternalSerializer0.Instance.Serialize(ref writer, localItems);
+		}
+		if (value.Name is { } localName)
+		{
+			writer.WritePropertyName("name");
+			writer.WriteStringValue(localName);
+		}
+		if (value.Id is { } localId)
+		{
+			writer.WritePropertyName("id");
+			writer.WriteNumberValue(localId);
+		}
+		if (value.Recursion is { } localRecursion)
+		{
+			writer.WritePropertyName("recursion");
+			Instance0.Serialize(ref writer, localRecursion);
+		}
+		writer.WriteEndObject();
+	}
 
 	Pingmint.CodeGen.Json.Test.Sample IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Deserialize(ref Utf8JsonReader reader)
 	{
@@ -25,65 +52,43 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 				{
 					if (reader.ValueTextEquals("items"))
 					{
-						var next = Next(ref reader);
-						if (next == JsonTokenType.StartArray)
+						obj.Items = Next(ref reader) switch
 						{
-							obj.Items = InternalSerializer0.Instance.Deserialize(ref reader);
-							break;
-						}
-						else
-						{
-							reader.Skip();
-							break;
-						}
+							JsonTokenType.Null => null,
+							JsonTokenType.StartArray => InternalSerializer0.Instance.Deserialize(ref reader),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Items: {unexpected} ")
+						};
+						break;
 					}
 					if (reader.ValueTextEquals("name"))
 					{
-						var next = Next(ref reader);
-						if (next == JsonTokenType.Null)
+						obj.Name = Next(ref reader) switch
 						{
-							obj.Name = null;
-						}
-						else if (next == JsonTokenType.String)
-						{
-							obj.Name = reader.GetString();
-						}
-						else
-						{
-							throw new InvalidOperationException();
-						}
+							JsonTokenType.Null => null,
+							JsonTokenType.String => reader.GetString(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Name: {unexpected} ")
+						};
 						break;
 					}
 					if (reader.ValueTextEquals("id"))
 					{
-						var next = Next(ref reader);
-						if (next == JsonTokenType.Null)
+						obj.Id = Next(ref reader) switch
 						{
-							obj.Id = null;
-						}
-						else if (next == JsonTokenType.Number)
-						{
-							obj.Id = reader.GetInt32();
-						}
-						else
-						{
-							throw new InvalidOperationException();
-						}
+							JsonTokenType.Null => null,
+							JsonTokenType.Number => reader.GetInt32(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Id: {unexpected} ")
+						};
 						break;
 					}
 					if (reader.ValueTextEquals("recursion"))
 					{
-						var next = Next(ref reader);
-						if (next == JsonTokenType.StartObject)
+						obj.Recursion = Next(ref reader) switch
 						{
-							obj.Recursion = Instance0.Deserialize(ref reader);
-							break;
-						}
-						else
-						{
-							reader.Skip();
-							break;
-						}
+							JsonTokenType.Null => null,
+							JsonTokenType.StartObject => Instance0.Deserialize(ref reader),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Recursion: {unexpected} ")
+						};
+						break;
 					}
 
 					reader.Skip();
@@ -101,36 +106,20 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 			}
 		}
 	}
-
-	void IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Serialize(ref Utf8JsonWriter writer, Pingmint.CodeGen.Json.Test.Sample value)
-	{
-		if (value is null) { writer.WriteNullValue(); return; }
-		writer.WriteStartObject();
-		if (value.Items is { } Items)
-		{
-			writer.WritePropertyName("items");
-			InternalSerializer0.Instance.Serialize(ref writer, Items);
-		}
-		if (value.Name is { } Name)
-		{
-			writer.WritePropertyName("name");
-			writer.WriteStringValue(Name);
-		}
-		if (value.Id is { } Id)
-		{
-			writer.WritePropertyName("id");
-			writer.WriteNumberValue(Id);
-		}
-		if (value.Recursion is { } Recursion)
-		{
-			writer.WritePropertyName("recursion");
-			Instance0.Serialize(ref writer, Recursion);
-		}
-		writer.WriteEndObject();
-	}
 	private class InternalSerializer0 : IJsonSerializer<List<Int32>>
 	{
 		public static readonly IJsonSerializer<List<Int32>> Instance = new InternalSerializer0();
+
+		public void Serialize(ref Utf8JsonWriter writer, List<Int32> value)
+		{
+			if (value is null) { writer.WriteNullValue(); return; }
+			writer.WriteStartArray();
+			foreach (var item in value)
+			{
+				writer.WriteNumberValue(item);
+			}
+			writer.WriteEndArray();
+		}
 
 		public List<Int32> Deserialize(ref Utf8JsonReader reader)
 		{
@@ -155,17 +144,6 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 					}
 				}
 			}
-		}
-
-		public void Serialize(ref Utf8JsonWriter writer, List<Int32> value)
-		{
-			if (value is null) { writer.WriteNullValue(); return; }
-			writer.WriteStartArray();
-			foreach (var item in value)
-			{
-				writer.WriteNumberValue(item);
-			}
-			writer.WriteEndArray();
 		}
 	}
 }

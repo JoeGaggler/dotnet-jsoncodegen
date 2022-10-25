@@ -124,7 +124,7 @@ internal static class Program
             if (trim.StartsWith("-"))
             {
                 var trim2 = trim[1..].Trim();
-                if (trim2.Split(':', 2, StringSplitOptions.TrimEntries) is not [String leftSide, String rightSide]) throw new InvalidOperationException();
+                if (trim2.Split(':', 2, StringSplitOptions.TrimEntries) is not [String leftSide, String rightSide]) throw new InvalidOperationException("unable to parse property type");
                 bool isArray = false;
                 if (rightSide.StartsWith('[') && rightSide.EndsWith(']'))
                 {
@@ -190,7 +190,7 @@ internal static class Program
             var codeNode = pair.Second;
             var props = codeNode.Properties;
 
-            if (syntaxNode.Name != codeNode.ClassName) throw new InvalidOperationException();
+            if (syntaxNode.Name != codeNode.ClassName) throw new InvalidOperationException("assertion failed: mismatched syntax node and class node");
 
             var classProps = new List<Model.Code.ClassPropertyNode>();
             var classNode = new Model.Code.ClassNode
@@ -318,7 +318,8 @@ internal static class Program
         code.Line("#nullable enable");
         code.UsingNamespace("System.Text.Json");
         code.Line();
-        code.FileNamespace(root.ClassNamespace);
+        var fileNamespace = root.ClassNamespace;
+        code.FileNamespace(fileNamespace);
         code.Line();
         code.Line("partial interface IJsonSerializer<T>");
         using (code.CreateBraceScope())
@@ -335,7 +336,7 @@ internal static class Program
             {
                 foreach (var prop in type.Properties)
                 {
-                    code.Line("public {0}? {1} {{ get; set; }}", prop.Type, prop.Name);
+                    code.Line("public {0}? {1} {{ get; set; }}", GetShortTypeName(fileNamespace, prop.Type), prop.Name);
                 }
             }
         }
@@ -376,19 +377,38 @@ internal static class Program
             var next = $"IJsonSerializer<{node.ClassFullName}>";
             imp += imp == null ? next : ", " + next;
         }
-        return imp ?? throw new NullReferenceException();
+        return imp ?? throw new NullReferenceException("failed to build interface implementer list");
     }
 
     private static void WriteSharedInstances(CodeWriter code, Model.Code.Root root)
     {
         foreach (var node in root.Objects)
         {
-            code.Line("private static readonly IJsonSerializer<{0}> {2} = new {1}();", node.ClassFullName, root.ClassFullName, node.SharedInstanceName);
+            code.Line("private static readonly IJsonSerializer<{0}> {2} = new {1}();", GetShortTypeName(root.FileNamespace, node.ClassFullName), GetShortTypeName(root.FileNamespace, root.ClassFullName), node.SharedInstanceName);
         }
     }
 
     private static void WriteObjectNode(CodeWriter code, Model.Code.ObjectNode node)
     {
+        using (code.ExplicitInterfaceMethod("void", $"IJsonSerializer<{node.ClassFullName}>", "Serialize", $"ref Utf8JsonWriter writer, {node.ClassFullName} value"))
+        {
+            code.Line("if (value is null) { writer.WriteNullValue(); return; }");
+            code.Line("writer.WriteStartObject();");
+            if (node.Properties.Count > 0)
+            {
+                foreach (var prop in node.Properties)
+                {
+                    var localName = $"local{prop.PropertyName}";
+                    using (code.If("value.{0} is {{ }} {1}", prop.PropertyName, localName))
+                    {
+                        code.Line("writer.WritePropertyName(\"{0}\");", prop.Key);
+                        prop.ItemSetter.WriteSerializeStatement(code, "writer", localName);
+                    }
+                }
+            }
+            code.Line("writer.WriteEndObject();");
+        }
+        code.Line();
         using (code.ExplicitInterfaceMethod(node.ClassFullName, $"IJsonSerializer<{node.ClassFullName}>", "Deserialize", "ref Utf8JsonReader reader"))
         {
             code.Line("var obj = new {0}();", node.ClassFullName);
@@ -421,109 +441,31 @@ internal static class Program
                 }
             }
         }
-        code.Line();
-        using (code.ExplicitInterfaceMethod("void", $"IJsonSerializer<{node.ClassFullName}>", "Serialize", $"ref Utf8JsonWriter writer, {node.ClassFullName} value"))
-        {
-            code.Line("if (value is null) { writer.WriteNullValue(); return; }");
-            code.Line("writer.WriteStartObject();");
-            if (node.Properties.Count > 0)
-            {
-                foreach (var prop in node.Properties)
-                {
-                    var localName = prop.PropertyName;
-                    using (code.If("value.{0} is {{ }} {1}", prop.PropertyName, localName))
-                    {
-                        code.Line("writer.WritePropertyName(\"{0}\");", prop.Key);
-                        prop.ItemSetter.WriteSerializeStatement(code, "writer", localName);
-                    }
-                }
-            }
-            code.Line("writer.WriteEndObject();");
-        }
     }
 
     private static void WriteObjectNodeProperty(CodeWriter code, Model.Code.ObjectNodeProperty prop)
     {
         using (code.If("reader.ValueTextEquals(\"{0}\")", prop.Key))
         {
-            var next = "next";
-            code.Line("var {0} = Next(ref reader);", next);
-            switch (prop.Type)
+            var reader = "reader";
+            var jsonTokenType = prop.Type switch
             {
-                case Model.Code.ObjectNodePropertyType.Array:
-                {
-                    using (code.If("next == JsonTokenType.StartArray"))
-                    {
-                        var reader = "reader";
-                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetDeserializeExpression(reader), prop.PropertyName);
-                        code.Line("break;");
-                    }
-                    using (code.Else())
-                    {
-                        code.Line("reader.Skip();");
-                        code.Line("break;");
-                    }
-                    break;
-                }
-                case Model.Code.ObjectNodePropertyType.Object:
-                {
-                    using (code.If("next == JsonTokenType.StartObject"))
-                    {
-                        var reader = "reader";
-                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetDeserializeExpression(reader), prop.PropertyName);
-                        code.Line("break;");
-                    }
-                    using (code.Else())
-                    {
-                        code.Line("reader.Skip();");
-                        code.Line("break;");
-                    }
-                    break;
-                }
-                case Model.Code.ObjectNodePropertyType.String:
-                {
-                    var reader = "reader";
-                    WriteObjectNodePropertySetter(code, reader, next, prop);
-                    code.Line("break;");
-                    break;
-                }
-                case Model.Code.ObjectNodePropertyType.Number:
-                {
-                    var reader = "reader";
-                    WriteObjectNodePropertySetter(code, reader, next, prop);
-                    code.Line("break;");
-                    break;
-                }
-                default: throw new InvalidOperationException();
+                Model.Code.ObjectNodePropertyType.Array => "StartArray",
+                Model.Code.ObjectNodePropertyType.Object => "StartObject",
+                Model.Code.ObjectNodePropertyType.String => "String",
+                Model.Code.ObjectNodePropertyType.Number => "Number",
+                _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {prop.Type}")
+            };
+
+            code.Line("obj.{0} = Next(ref reader) switch", prop.PropertyName);
+            using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
+            {
+                code.Line("JsonTokenType.Null => null,");
+                code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader));
+                code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
             }
+            code.Line("break;");
         }
-    }
-
-    private static void WriteObjectNodePropertySetter(CodeWriter code, String reader, String nextToken, Model.Code.ObjectNodeProperty prop)
-    {
-        var tokenType = prop.Type switch
-        {
-            Model.Code.ObjectNodePropertyType.String => "JsonTokenType.String",
-            Model.Code.ObjectNodePropertyType.Number => "JsonTokenType.Number",
-            _ => throw new InvalidOperationException(),
-        };
-        using (code.If("{0} == JsonTokenType.Null", nextToken, tokenType))
-        {
-            WriteModelSetter(code, reader, prop.PropertyName, Model.Code.NullSetter.Instance);
-        }
-        using (code.ElseIf("{0} == {1}", nextToken, tokenType))
-        {
-            WriteModelSetter(code, reader, prop.PropertyName, prop.ItemSetter);
-        }
-        using (code.Else())
-        {
-            code.Line("throw new InvalidOperationException();");
-        }
-    }
-
-    private static void WriteModelSetter(CodeWriter code, String reader, String PropertyName, Model.Code.ISetter ItemSetter)
-    {
-        code.Line("obj.{1} = {0};", ItemSetter.GetDeserializeExpression(reader), PropertyName);
     }
 
     private static void WriteModelAdder(CodeWriter code, String reader, Model.Code.ArrayNode prop)
@@ -539,6 +481,18 @@ internal static class Program
         using (code.Class("private", internalSerializerName, $"IJsonSerializer<{internalSerializerType}>"))
         {
             code.Line("public static readonly IJsonSerializer<{0}> Instance = new {1}();", internalSerializerType, internalSerializerName);
+            code.Line();
+
+            using (code.Method("public", "void", "Serialize", $"ref Utf8JsonWriter writer, {internalSerializerType} value"))
+            {
+                code.Line("if (value is null) { writer.WriteNullValue(); return; }");
+                code.Line("writer.WriteStartArray();");
+                using (code.ForEach("var item in value"))
+                {
+                    node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
+                }
+                code.Line("writer.WriteEndArray();");
+            }
             code.Line();
             using (code.Method("public", internalSerializerType, "Deserialize", "ref Utf8JsonReader reader"))
             {
@@ -564,22 +518,13 @@ internal static class Program
                     }
                 }
             }
-            code.Line();
-            using (code.Method("public", "void", "Serialize", $"ref Utf8JsonWriter writer, {internalSerializerType} value"))
-            {
-                code.Line("if (value is null) { writer.WriteNullValue(); return; }");
-                code.Line("writer.WriteStartArray();");
-                using (code.ForEach("var item in value"))
-                {
-                    node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
-                }
-                code.Line("writer.WriteEndArray();");
-            }
         }
     }
 
     private static void WriteHelpers(CodeWriter code)
     {
-        code.Line("private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException();");
+        code.Line("private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
     }
+
+    private static String GetShortTypeName(String fileNamespace, String typeName) => typeName.StartsWith(fileNamespace + ".") ? typeName.Substring(fileNamespace.Length + 1) : typeName;
 }
