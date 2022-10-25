@@ -4,7 +4,7 @@ A dotnet tool that generates code that can serialize JSON as described by a simp
 
 ## Overview
 
-There are [several](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview?pivots=dotnet-7-0) ways to read and write JSON in dotnet. This tool leverages the benefits of `Utf8JsonReader` and `Utf8JsonWriter`, but provides a simpler approach to serializing strongly-typed models than alternatives such as `JsonSerializer`.
+There are [several](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview?pivots=dotnet-7-0) ways to read and write JSON in dotnet. This tool leverages the benefits of `Utf8JsonReader` and `Utf8JsonWriter`, producing a C# file that you can use as-is, edit manually, or extend via a `partial` implementation.
 
 ## Getting Started
 
@@ -51,4 +51,4 @@ The properties mappings consist of three basic parts:
 * C# property name
 * C# property type
 
-The `children` property has a type of `[Person]`, which means an array of `Person` objects. The C# property can be any collection type that has an `Add(Person p)` method.
+The `children` property has a type of `[Person]`, which means an array of `Person` objects. The C# property can be any collection type that has an `Add(Person p)` method and likewise implements an enumerable with `Person` elements.

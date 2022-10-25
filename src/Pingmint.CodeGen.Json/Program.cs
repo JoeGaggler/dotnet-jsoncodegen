@@ -320,10 +320,11 @@ internal static class Program
         code.Line();
         code.FileNamespace(root.ClassNamespace);
         code.Line();
-        code.Line("public interface IJsonSerializer<T>");
+        code.Line("partial interface IJsonSerializer<T>");
         using (code.CreateBraceScope())
         {
             code.Line("T Deserialize(ref Utf8JsonReader reader);");
+            code.Line("void Serialize(ref Utf8JsonWriter writer, T value);");
         }
 
         WriteRoot(code, root);
@@ -346,7 +347,7 @@ internal static class Program
     {
         var implements = GetImplements(root);
 
-        using (code.Class("internal sealed", root.ClassName, implements))
+        using (code.PartialClass("sealed", root.ClassName, implements))
         {
             WriteSharedInstances(code, root);
             code.Line();
@@ -404,7 +405,7 @@ internal static class Program
                                 WriteObjectNodeProperty(code, prop);
                             }
                             code.Line();
-                            code.Line("Skip(ref reader);");
+                            code.Line("reader.Skip();");
                             code.Line("break;");
                         }
                     }
@@ -414,11 +415,30 @@ internal static class Program
                     }
                     using (code.SwitchDefault())
                     {
-                        code.Line("Skip(ref reader);");
+                        code.Line("reader.Skip();");
                         code.Line("break;");
                     }
                 }
             }
+        }
+        code.Line();
+        using (code.ExplicitInterfaceMethod("void", $"IJsonSerializer<{node.ClassFullName}>", "Serialize", $"ref Utf8JsonWriter writer, {node.ClassFullName} value"))
+        {
+            code.Line("if (value is null) { writer.WriteNullValue(); return; }");
+            code.Line("writer.WriteStartObject();");
+            if (node.Properties.Count > 0)
+            {
+                foreach (var prop in node.Properties)
+                {
+                    var localName = prop.PropertyName;
+                    using (code.If("value.{0} is {{ }} {1}", prop.PropertyName, localName))
+                    {
+                        code.Line("writer.WritePropertyName(\"{0}\");", prop.Key);
+                        prop.ItemSetter.WriteSerializeStatement(code, "writer", localName);
+                    }
+                }
+            }
+            code.Line("writer.WriteEndObject();");
         }
     }
 
@@ -435,14 +455,12 @@ internal static class Program
                     using (code.If("next == JsonTokenType.StartArray"))
                     {
                         var reader = "reader";
-                        prop.ItemSetter.WriteAbove(code, reader);
-                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetExpression(reader), prop.PropertyName);
-                        prop.ItemSetter.WriteBelow(code, reader);
+                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetDeserializeExpression(reader), prop.PropertyName);
                         code.Line("break;");
                     }
                     using (code.Else())
                     {
-                        code.Line("Skip(ref reader);");
+                        code.Line("reader.Skip();");
                         code.Line("break;");
                     }
                     break;
@@ -452,14 +470,12 @@ internal static class Program
                     using (code.If("next == JsonTokenType.StartObject"))
                     {
                         var reader = "reader";
-                        prop.ItemSetter.WriteAbove(code, reader);
-                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetExpression(reader), prop.PropertyName);
-                        prop.ItemSetter.WriteBelow(code, reader);
+                        code.Line("obj.{1} = {0};", prop.ItemSetter.GetDeserializeExpression(reader), prop.PropertyName);
                         code.Line("break;");
                     }
                     using (code.Else())
                     {
-                        code.Line("Skip(ref reader);");
+                        code.Line("reader.Skip();");
                         code.Line("break;");
                     }
                     break;
@@ -507,16 +523,12 @@ internal static class Program
 
     private static void WriteModelSetter(CodeWriter code, String reader, String PropertyName, Model.Code.ISetter ItemSetter)
     {
-        ItemSetter.WriteAbove(code, reader);
-        code.Line("obj.{1} = {0};", ItemSetter.GetExpression(reader), PropertyName);
-        ItemSetter.WriteBelow(code, reader);
+        code.Line("obj.{1} = {0};", ItemSetter.GetDeserializeExpression(reader), PropertyName);
     }
 
     private static void WriteModelAdder(CodeWriter code, String reader, Model.Code.ArrayNode prop)
     {
-        prop.ItemSetter.WriteAbove(code, reader);
-        code.Line("obj.Add({0});", prop.ItemSetter.GetExpression(reader));
-        prop.ItemSetter.WriteBelow(code, reader);
+        code.Line("obj.Add({0});", prop.ItemSetter.GetDeserializeExpression(reader));
     }
 
     private static void WriteArrayNode(CodeWriter code, Model.Code.ArrayNode node)
@@ -546,55 +558,28 @@ internal static class Program
                         }
                         using (code.SwitchDefault())
                         {
-                            code.Line("Skip(ref reader);");
+                            code.Line("reader.Skip();");
                             code.Line("break;");
                         }
                     }
                 }
+            }
+            code.Line();
+            using (code.Method("public", "void", "Serialize", $"ref Utf8JsonWriter writer, {internalSerializerType} value"))
+            {
+                code.Line("if (value is null) { writer.WriteNullValue(); return; }");
+                code.Line("writer.WriteStartArray();");
+                using (code.ForEach("var item in value"))
+                {
+                    node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
+                }
+                code.Line("writer.WriteEndArray();");
             }
         }
     }
 
     private static void WriteHelpers(CodeWriter code)
     {
-        code.Line("""
-            private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException();
-
-                private static void Skip(ref Utf8JsonReader reader)
-                {
-                    var depth = 0;
-                    do
-                    {
-                        switch (Next(ref reader))
-                        {
-                            case JsonTokenType.Null:
-                            case JsonTokenType.String:
-                            case JsonTokenType.True:
-                            case JsonTokenType.False:
-                            case JsonTokenType.Number:
-                            case JsonTokenType.PropertyName:
-                            {
-                                break;
-                            }
-                            case JsonTokenType.StartArray:
-                            case JsonTokenType.StartObject:
-                            {
-                                depth++;
-                                break;
-                            }
-                            case JsonTokenType.EndArray:
-                            case JsonTokenType.EndObject:
-                            {
-                                depth--;
-                                break;
-                            }
-                            default:
-                            {
-                                throw new InvalidOperationException();
-                            }
-                        }
-                    } while (depth > 0);
-                }
-            """);
+        code.Line("private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException();");
     }
 }

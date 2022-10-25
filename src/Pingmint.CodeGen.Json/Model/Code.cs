@@ -51,33 +51,29 @@ public class ClassPropertyNode
 
 public interface ISetter
 {
-    void WriteAbove(Pingmint.CodeGen.CSharp.CodeWriter code, String reader);
-    void WriteBelow(Pingmint.CodeGen.CSharp.CodeWriter code, String reader);
-    String GetExpression(String reader);
+    String GetDeserializeExpression(String reader);
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) => code.Line("{0}.WriteNullValue(); // TODO: implement WriteSerializeStatement in {1}", writer, GetType().FullName);
 }
 
 public class NullSetter : ISetter
 {
     public static readonly NullSetter Instance = new();
-    public void WriteAbove(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public void WriteBelow(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public String GetExpression(String reader) => "null";
+    public String GetDeserializeExpression(String reader) => "null";
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) => code.Line("{0}.WriteNullValue();", writer);
 }
 
 public class IntSetter : ISetter
 {
     public static readonly IntSetter Instance = new();
-    public void WriteAbove(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public void WriteBelow(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public String GetExpression(String reader) => $"{reader}.GetInt32()";
+    public String GetDeserializeExpression(String reader) => $"{reader}.GetInt32()";
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) => code.Line("{0}.WriteNumberValue({1});", writer, value);
 }
 
 public class StringSetter : ISetter
 {
     public static readonly StringSetter Instance = new();
-    public void WriteAbove(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public void WriteBelow(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public String GetExpression(String reader) => $"{reader}.GetString()";
+    public String GetDeserializeExpression(String reader) => $"{reader}.GetString()";
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) => code.Line("{0}.WriteStringValue({1});", writer, value);
 }
 
 public class InternalSetter : ISetter
@@ -89,7 +85,6 @@ public class InternalSetter : ISetter
         this.Serializer = serializer;
     }
 
-    public void WriteAbove(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public void WriteBelow(Pingmint.CodeGen.CSharp.CodeWriter code, String reader) { }
-    public String GetExpression(String reader) => $"{this.Serializer}.Deserialize(ref reader)";
+    public String GetDeserializeExpression(String reader) => $"{this.Serializer}.Deserialize(ref reader)";
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) => code.Line("{0}.Serialize(ref {1}, {2});", this.Serializer, writer, value);
 }

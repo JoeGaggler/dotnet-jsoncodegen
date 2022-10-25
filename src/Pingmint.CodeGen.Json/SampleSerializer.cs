@@ -3,51 +3,16 @@ using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-public interface IJsonSerializer<T>
+partial interface IJsonSerializer<T>
 {
 	T Deserialize(ref Utf8JsonReader reader);
+	void Serialize(ref Utf8JsonWriter writer, T value);
 }
-internal sealed class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
+sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
 {
 	private static readonly IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample> Instance0 = new Pingmint.CodeGen.Json.Test.SampleSerializer();
 
 	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException();
-
-    private static void Skip(ref Utf8JsonReader reader)
-    {
-        var depth = 0;
-        do
-        {
-            switch (Next(ref reader))
-            {
-                case JsonTokenType.Null:
-                case JsonTokenType.String:
-                case JsonTokenType.True:
-                case JsonTokenType.False:
-                case JsonTokenType.Number:
-                case JsonTokenType.PropertyName:
-                {
-                    break;
-                }
-                case JsonTokenType.StartArray:
-                case JsonTokenType.StartObject:
-                {
-                    depth++;
-                    break;
-                }
-                case JsonTokenType.EndArray:
-                case JsonTokenType.EndObject:
-                {
-                    depth--;
-                    break;
-                }
-                default:
-                {
-                    throw new InvalidOperationException();
-                }
-            }
-        } while (depth > 0);
-    }
 
 	Pingmint.CodeGen.Json.Test.Sample IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Deserialize(ref Utf8JsonReader reader)
 	{
@@ -68,7 +33,7 @@ internal sealed class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.T
 						}
 						else
 						{
-							Skip(ref reader);
+							reader.Skip();
 							break;
 						}
 					}
@@ -116,12 +81,12 @@ internal sealed class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.T
 						}
 						else
 						{
-							Skip(ref reader);
+							reader.Skip();
 							break;
 						}
 					}
 
-					Skip(ref reader);
+					reader.Skip();
 					break;
 				}
 				case JsonTokenType.EndObject:
@@ -130,11 +95,38 @@ internal sealed class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.T
 				}
 				default:
 				{
-					Skip(ref reader);
+					reader.Skip();
 					break;
 				}
 			}
 		}
+	}
+
+	void IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Serialize(ref Utf8JsonWriter writer, Pingmint.CodeGen.Json.Test.Sample value)
+	{
+		if (value is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartObject();
+		if (value.Items is { } Items)
+		{
+			writer.WritePropertyName("items");
+			InternalSerializer0.Instance.Serialize(ref writer, Items);
+		}
+		if (value.Name is { } Name)
+		{
+			writer.WritePropertyName("name");
+			writer.WriteStringValue(Name);
+		}
+		if (value.Id is { } Id)
+		{
+			writer.WritePropertyName("id");
+			writer.WriteNumberValue(Id);
+		}
+		if (value.Recursion is { } Recursion)
+		{
+			writer.WritePropertyName("recursion");
+			Instance0.Serialize(ref writer, Recursion);
+		}
+		writer.WriteEndObject();
 	}
 	private class InternalSerializer0 : IJsonSerializer<List<Int32>>
 	{
@@ -158,11 +150,22 @@ internal sealed class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.T
 					}
 					default:
 					{
-						Skip(ref reader);
+						reader.Skip();
 						break;
 					}
 				}
 			}
+		}
+
+		public void Serialize(ref Utf8JsonWriter writer, List<Int32> value)
+		{
+			if (value is null) { writer.WriteNullValue(); return; }
+			writer.WriteStartArray();
+			foreach (var item in value)
+			{
+				writer.WriteNumberValue(item);
+			}
+			writer.WriteEndArray();
 		}
 	}
 }
