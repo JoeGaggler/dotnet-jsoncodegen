@@ -6,6 +6,7 @@ public class Root
     public String ClassNamespace { get; set; }
     public String ClassName { get; set; }
     public String ClassFullName => $"{ClassNamespace}.{ClassName}";
+    public String? AccessModifier { get; set; }
     public List<ObjectNode> Objects { get; set; }
     public List<ArrayNode> Arrays { get; set; }
     public List<ClassNode> Classes { get; set; }
@@ -16,6 +17,7 @@ public class ObjectNode
     public String ClassNamespace { get; set; }
     public String ClassName { get; set; }
     public String ClassFullName => $"{ClassNamespace}.{ClassName}";
+    public String? ClassAccessModifier { get; set; }
     public String SharedInstanceName { get; set; }
     public List<ObjectNodeProperty> Properties { get; set; }
 }
@@ -41,6 +43,7 @@ public class ArrayNode
 public class ClassNode
 {
     public String ClassName { get; set; }
+    public String? ClassAccessModifier { get; set; }
     public List<ClassPropertyNode> Properties { get; set; }
 }
 

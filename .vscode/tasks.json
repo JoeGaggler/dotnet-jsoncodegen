@@ -65,7 +65,9 @@
                 "SampleSerializer.cs",
                 "--class",
                 "Pingmint.CodeGen.Json.Test.SampleSerializer",
-                "-m"
+                "-m",
+                "-a",
+                "public"
             ],
             "problemMatcher": "$msCompile",
             "options": {

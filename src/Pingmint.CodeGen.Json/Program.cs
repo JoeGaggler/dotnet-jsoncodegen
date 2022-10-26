@@ -14,10 +14,11 @@ internal static class Program
             WriteLine("""
 
             jsoncodegen arguments:
-              -i or --input:  path to the specification
-              -o or --output: path for the generated C# file
+              -a or --access: access modifier for generated types
               -c or --class:  class name with namespace for the serializer
+              -i or --input:  path to the specification
               -m or --make:   flag that specifies whether to generate model classes as well
+              -o or --output: path for the generated C# file
 
             """);
             return 1;
@@ -26,6 +27,7 @@ internal static class Program
         String? inputFileArg = null;
         String? outputFileArg = null;
         String? classPath = null;
+        String? accessModifier = null;
         Boolean makeClasses = false;
         using (var argy = args.AsEnumerable().GetEnumerator())
         {
@@ -62,6 +64,13 @@ internal static class Program
                         makeClasses = true;
                         break;
                     }
+                    case "-a":
+                    case "--access":
+                    {
+                        accessModifier = NextArg();
+                        break;
+                    }
+
                     default:
                     {
                         WriteLine("Unexpected argument: " + arg);
@@ -89,7 +98,7 @@ internal static class Program
             Objects = ParseSyntax(inputLines),
         };
 
-        var codeRoot = GetCodeRoot(syntaxRoot, makeClasses);
+        var codeRoot = GetCodeRoot(syntaxRoot, makeClasses, accessModifier);
         var code = GenerateCode(codeRoot);
 
         using TextWriter textWriter = outputFileArg switch
@@ -136,6 +145,7 @@ internal static class Program
                     key = leftSide;
                     name = leftSide;
                 }
+                key = TrimEnclosure(key, '"', '"');
                 props.Add(new()
                 {
                     Key = key,
@@ -155,7 +165,9 @@ internal static class Program
         return nodes;
     }
 
-    private static Model.Code.Root GetCodeRoot(Model.Syntax.RootNode syntax, Boolean makeClasses)
+    private static String TrimEnclosure(String value, Char left, Char right) => (value.StartsWith(left) && value.EndsWith(right)) ? value[1..^1] : value;
+
+    private static Model.Code.Root GetCodeRoot(Model.Syntax.RootNode syntax, Boolean makeClasses, String accessModifier)
     {
         var codeObjects = new List<Model.Code.ObjectNode>();
         var codeArrays = new List<Model.Code.ArrayNode>();
@@ -167,9 +179,9 @@ internal static class Program
             Objects = codeObjects,
             Arrays = codeArrays,
             Classes = codeClasses,
+            AccessModifier = accessModifier,
         };
 
-        var instanceCount = 0;
         var internalCount = 0;
 
         foreach (var node in syntax.Objects)
@@ -179,7 +191,8 @@ internal static class Program
             {
                 ClassNamespace = syntax.ClassNamespace,
                 ClassName = node.Name,
-                SharedInstanceName = $"Instance{instanceCount++}",
+                ClassAccessModifier = accessModifier,
+                SharedInstanceName = node.Name,
                 Properties = props,
             });
         }
@@ -195,10 +208,11 @@ internal static class Program
             var classProps = new List<Model.Code.ClassPropertyNode>();
             var classNode = new Model.Code.ClassNode
             {
+                ClassAccessModifier = codeNode.ClassAccessModifier,
                 ClassName = codeNode.ClassName,
                 Properties = classProps,
             };
-            codeClasses.Add(classNode); // TODO: only if requested
+            codeClasses.Add(classNode);
 
             foreach (var prop in syntaxNode.Properties)
             {
@@ -227,7 +241,11 @@ internal static class Program
                         }
                         default:
                         {
-                            var foundNode = codeObjects.First(i => i.ClassName == prop.Type);
+                            var foundNode = codeObjects.FirstOrDefault(i => i.ClassName == prop.Type);
+                            if (foundNode == null)
+                            {
+                                throw new InvalidOperationException($"Unable to find requested type: {prop.Type}");
+                            }
                             itemSetter = new Model.Code.InternalSetter(foundNode.SharedInstanceName);
                             break;
                         }
@@ -316,12 +334,15 @@ internal static class Program
         var code = new CodeWriter();
 
         code.Line("#nullable enable");
+        code.UsingNamespace("System");
+        code.UsingNamespace("System.Collections.Generic");
         code.UsingNamespace("System.Text.Json");
         code.Line();
         var fileNamespace = root.ClassNamespace;
         code.FileNamespace(fileNamespace);
         code.Line();
-        code.Line("partial interface IJsonSerializer<T>");
+        var interfaceModifiers = root.AccessModifier is { } interfaceAccess ? $"{interfaceAccess} " : "";
+        code.Line("{0}partial interface IJsonSerializer<T>", interfaceModifiers);
         using (code.CreateBraceScope())
         {
             code.Line("T Deserialize(ref Utf8JsonReader reader);");
@@ -332,7 +353,8 @@ internal static class Program
 
         foreach (var type in root.Classes)
         {
-            using (code.PartialClass("sealed", type.ClassName))
+            var modifiers = type.ClassAccessModifier is { } access ? $"{access} sealed" : "sealed";
+            using (code.PartialClass(modifiers, type.ClassName))
             {
                 foreach (var prop in type.Properties)
                 {
@@ -348,7 +370,8 @@ internal static class Program
     {
         var implements = GetImplements(root);
 
-        using (code.PartialClass("sealed", root.ClassName, implements))
+        var modifiers = root.AccessModifier is { } access ? $"{access} sealed" : "sealed";
+        using (code.PartialClass(modifiers, root.ClassName, implements))
         {
             WriteSharedInstances(code, root);
             code.Line();
@@ -384,7 +407,7 @@ internal static class Program
     {
         foreach (var node in root.Objects)
         {
-            code.Line("private static readonly IJsonSerializer<{0}> {2} = new {1}();", GetShortTypeName(root.FileNamespace, node.ClassFullName), GetShortTypeName(root.FileNamespace, root.ClassFullName), node.SharedInstanceName);
+            code.Line("public static readonly IJsonSerializer<{0}> {2} = new {1}();", GetShortTypeName(root.FileNamespace, node.ClassFullName), GetShortTypeName(root.FileNamespace, root.ClassFullName), node.SharedInstanceName);
         }
     }
 
@@ -503,7 +526,7 @@ internal static class Program
                     {
                         using (code.SwitchCase("JsonTokenType.Number"))
                         {
-                            WriteModelAdder(code, reader, node);
+                            WriteModelAdder(code, reader, node); // TODO: handle case where JSON token is null, but C# item is not nullable
                             code.Line("break;");
                         }
                         using (code.SwitchCase("JsonTokenType.EndArray"))

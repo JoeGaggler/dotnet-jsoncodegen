@@ -1,16 +1,18 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-partial interface IJsonSerializer<T>
+public partial interface IJsonSerializer<T>
 {
 	T Deserialize(ref Utf8JsonReader reader);
 	void Serialize(ref Utf8JsonWriter writer, T value);
 }
-sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
+public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
 {
-	private static readonly IJsonSerializer<Sample> Instance0 = new SampleSerializer();
+	public static readonly IJsonSerializer<Sample> Sample = new SampleSerializer();
 
 	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 
@@ -36,7 +38,7 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 		if (value.Recursion is { } localRecursion)
 		{
 			writer.WritePropertyName("recursion");
-			Instance0.Serialize(ref writer, localRecursion);
+			Sample.Serialize(ref writer, localRecursion);
 		}
 		writer.WriteEndObject();
 	}
@@ -85,7 +87,7 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 						obj.Recursion = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartObject => Instance0.Deserialize(ref reader),
+							JsonTokenType.StartObject => Sample.Deserialize(ref reader),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Recursion: {unexpected} ")
 						};
 						break;
@@ -147,7 +149,7 @@ sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Te
 		}
 	}
 }
-sealed partial class Sample
+public sealed partial class Sample
 {
 	public List<Int32>? Items { get; set; }
 	public String? Name { get; set; }
