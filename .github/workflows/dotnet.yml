@@ -1,0 +1,41 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: dotnet
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.x
+        dotnet-quality: preview
+    - name: Version
+      run: |
+        OLD=$(yq ".Project.PropertyGroup[0].Version" -p xml -o xml src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj)
+        NEW="$OLD.${COUNTER}" yq ".Project.PropertyGroup[0].Version = env(NEW)" -p xml -o xml -i src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj
+        cat src/Pingmint.CodeGen.Json/Pingmint.CodeGen.Json.csproj
+      env:
+        COUNTER: ${{ github.run_number }}
+    - name: Restore dependencies
+      run: dotnet restore src/Pingmint.CodeGen.Json
+    - name: Build
+      run: dotnet build --configuration Release --no-restore src/Pingmint.CodeGen.Json
+    - name: Test
+      run: dotnet test --configuration Release --no-build --no-restore --verbosity normal src/Pingmint.CodeGen.Json
+    - name: Pack
+      run: dotnet pack --configuration Release --no-build --no-restore --verbosity normal --output ./nupkg src/Pingmint.CodeGen.Json
+    - name: Push
+      run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key $NUGET_API_KEY
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      if: github.ref == 'refs/heads/master'
