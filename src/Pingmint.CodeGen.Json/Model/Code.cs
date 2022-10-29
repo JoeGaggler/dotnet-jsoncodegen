@@ -28,7 +28,6 @@ public class ObjectNodeProperty
 {
     public String Key { get; set; }
     public String PropertyName { get; set; }
-    //public Type PropertyType { get; set; } // TODO
     public ObjectNodePropertyType Type { get; set; }
     public ISetter ItemSetter { get; set; }
 }
@@ -38,6 +37,7 @@ public class ArrayNode
     public String ClassName { get; set; }
     public String ItemTypeName { get; set; }
     public ISetter ItemSetter { get; set; }
+    public ObjectNodePropertyType Type { get; set; }
 }
 
 public class ClassNode

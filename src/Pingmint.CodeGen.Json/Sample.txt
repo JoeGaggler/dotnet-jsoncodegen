@@ -3,3 +3,4 @@ Sample
 - name => Name : String
 - id => Id : Int32
 - recursion => Recursion : Sample
+- items2 => Items2 : [Sample]

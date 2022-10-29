@@ -197,10 +197,8 @@ internal static class Program
             });
         }
 
-        foreach (var pair in syntax.Objects.Zip(codeObjects))
+        foreach (var (syntaxNode, codeNode) in syntax.Objects.Zip(codeObjects))
         {
-            var syntaxNode = pair.First;
-            var codeNode = pair.Second;
             var props = codeNode.Properties;
 
             if (syntaxNode.Name != codeNode.ClassName) throw new InvalidOperationException("assertion failed: mismatched syntax node and class node");
@@ -214,6 +212,42 @@ internal static class Program
             };
             codeClasses.Add(classNode);
 
+            static (Model.Code.ISetter, Model.Code.ObjectNodePropertyType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
+            {
+                Model.Code.ISetter itemSetter;
+                Model.Code.ObjectNodePropertyType itemType;
+                switch (type)
+                {
+                    case "int":
+                    case "Int32":
+                    {
+                        itemSetter = Model.Code.IntSetter.Instance;
+                        itemType = Model.Code.ObjectNodePropertyType.Number;
+                        break;
+                    }
+                    case "string":
+                    case "String":
+                    {
+                        itemSetter = Model.Code.StringSetter.Instance;
+                        itemType = Model.Code.ObjectNodePropertyType.String;
+                        break;
+                    }
+                    // TODO: array of arrays
+                    default:
+                    {
+                        var foundNode = codeObjects.FirstOrDefault(i => i.ClassName == type);
+                        if (foundNode == null)
+                        {
+                            throw new InvalidOperationException($"Unable to find requested type: {type}");
+                        }
+                        itemSetter = new Model.Code.InternalSetter(foundNode.SharedInstanceName);
+                        itemType = Model.Code.ObjectNodePropertyType.Object;
+                        break;
+                    }
+                }
+                return (itemSetter, itemType);
+            }
+
             foreach (var prop in syntaxNode.Properties)
             {
                 classProps.Add(new()
@@ -224,38 +258,14 @@ internal static class Program
 
                 if (prop.IsArray)
                 {
-                    Model.Code.ISetter itemSetter;
-                    switch (prop.Type)
-                    {
-                        case "int":
-                        case "Int32":
-                        {
-                            itemSetter = Model.Code.IntSetter.Instance;
-                            break;
-                        }
-                        case "string":
-                        case "String":
-                        {
-                            itemSetter = Model.Code.StringSetter.Instance;
-                            break;
-                        }
-                        default:
-                        {
-                            var foundNode = codeObjects.FirstOrDefault(i => i.ClassName == prop.Type);
-                            if (foundNode == null)
-                            {
-                                throw new InvalidOperationException($"Unable to find requested type: {prop.Type}");
-                            }
-                            itemSetter = new Model.Code.InternalSetter(foundNode.SharedInstanceName);
-                            break;
-                        }
-                    }
+                    var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
                     var className = $"InternalSerializer{internalCount++}";
                     var array = new Model.Code.ArrayNode()
                     {
                         ClassName = className,
                         ItemTypeName = prop.Type,
                         ItemSetter = itemSetter,
+                        Type = itemType,
                     };
                     codeArrays.Add(array);
                     props.Add(new()
@@ -273,30 +283,7 @@ internal static class Program
                         Key = prop.Key,
                         PropertyName = prop.Name,
                     };
-                    switch (prop.Type)
-                    {
-                        case "int":
-                        case "Int32":
-                        {
-                            add.Type = Model.Code.ObjectNodePropertyType.Number;
-                            add.ItemSetter = Model.Code.IntSetter.Instance;
-                            break;
-                        }
-                        case "string":
-                        case "String":
-                        {
-                            add.Type = Model.Code.ObjectNodePropertyType.String;
-                            add.ItemSetter = Model.Code.StringSetter.Instance;
-                            break;
-                        }
-                        default:
-                        {
-                            var foundNode = codeObjects.First(i => i.ClassName == prop.Type);
-                            add.Type = Model.Code.ObjectNodePropertyType.Object;
-                            add.ItemSetter = new Model.Code.InternalSetter(foundNode.SharedInstanceName);
-                            break;
-                        }
-                    }
+                    (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
                     props.Add(add);
                 }
             }
@@ -471,14 +458,7 @@ internal static class Program
         using (code.If("reader.ValueTextEquals(\"{0}\")", prop.Key))
         {
             var reader = "reader";
-            var jsonTokenType = prop.Type switch
-            {
-                Model.Code.ObjectNodePropertyType.Array => "StartArray",
-                Model.Code.ObjectNodePropertyType.Object => "StartObject",
-                Model.Code.ObjectNodePropertyType.String => "String",
-                Model.Code.ObjectNodePropertyType.Number => "Number",
-                _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {prop.Type}")
-            };
+            var jsonTokenType = GetTokenTypeFromPropertyType(prop.Type);
 
             code.Line("obj.{0} = Next(ref reader) switch", prop.PropertyName);
             using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
@@ -490,6 +470,15 @@ internal static class Program
             code.Line("break;");
         }
     }
+
+    private static String GetTokenTypeFromPropertyType(Model.Code.ObjectNodePropertyType type) => type switch
+    {
+        Model.Code.ObjectNodePropertyType.Array => "StartArray",
+        Model.Code.ObjectNodePropertyType.Object => "StartObject",
+        Model.Code.ObjectNodePropertyType.String => "String",
+        Model.Code.ObjectNodePropertyType.Number => "Number",
+        _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {type}")
+    };
 
     private static void WriteModelAdder(CodeWriter code, String reader, Model.Code.ArrayNode prop)
     {
@@ -524,9 +513,17 @@ internal static class Program
                 {
                     using (code.Switch("Next(ref reader)"))
                     {
-                        using (code.SwitchCase("JsonTokenType.Number"))
+                        var jsonTokenType = GetTokenTypeFromPropertyType(node.Type);
+
+                        using (code.SwitchCase("JsonTokenType.Null"))
                         {
-                            WriteModelAdder(code, reader, node); // TODO: handle case where JSON token is null, but C# item is not nullable
+                            // TODO: handle case where JSON token is null, but C# item is not nullable
+                            code.Line("reader.Skip();");
+                            code.Line("break;");
+                        }
+                        using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
+                        {
+                            WriteModelAdder(code, reader, node);
                             code.Line("break;");
                         }
                         using (code.SwitchCase("JsonTokenType.EndArray"))
