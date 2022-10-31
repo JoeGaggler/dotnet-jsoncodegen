@@ -122,6 +122,31 @@
                 "test"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "add/update nuget package",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "add",
+                "package",
+                "${input:nugetPackage}"
+            ],
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
+            }
+        },
+    ],
+    "inputs": [
+        {
+            "id": "nugetPackage",
+            "type": "pickString",
+            "description": "NuGet Package",
+            "default": "Pingmint.CodeGen.CSharp.CodeWriter",
+            "options": [
+                "Pingmint.CodeGen.CSharp.CodeWriter"
+            ]
         }
     ]
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.4</Version>
+    <Version>0.5</Version>
     <OutputType>Exe</OutputType>
     <TargetFramework>net7.0</TargetFramework>
     <LangVersion>preview</LangVersion>
@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pingmint.CodeGen.CSharp.CodeWriter" Version="0.1.1" />
+    <PackageReference Include="Pingmint.CodeGen.CSharp.CodeWriter" Version="0.2.0" />
   </ItemGroup>
 
 </Project>

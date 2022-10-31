@@ -4,9 +4,9 @@
     "net7.0": {
       "Pingmint.CodeGen.CSharp.CodeWriter": {
         "type": "Direct",
-        "requested": "[0.1.1, )",
-        "resolved": "0.1.1",
-        "contentHash": "N+ZkCWfZP+6Vckn7dJwSotS37PHPXrEFsgEEg1ugWpZ7n6Gi4ac6RjtRur0ToKcSri8oNm8yiT4KCr12qwy7Mg=="
+        "requested": "[0.2.0, )",
+        "resolved": "0.2.0",
+        "contentHash": "L95V8Po9GG0vHrKau97zu2DhlKeUNX/9L9GfTQntQJ6jFV3R4otJBsXPuEZJQcSNjWHCjzihuMVujoZqX1YHsg=="
       }
     }
   }

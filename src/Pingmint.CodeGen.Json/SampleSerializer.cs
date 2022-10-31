@@ -23,7 +23,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		if (value.Items is { } localItems)
 		{
 			writer.WritePropertyName("items");
-			InternalSerializer0.Instance.Serialize(ref writer, localItems);
+			InternalSerializer0.Serialize(ref writer, localItems);
 		}
 		if (value.Name is { } localName)
 		{
@@ -43,7 +43,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		if (value.Items2 is { } localItems2)
 		{
 			writer.WritePropertyName("items2");
-			InternalSerializer1.Instance.Serialize(ref writer, localItems2);
+			InternalSerializer1.Serialize(ref writer, localItems2);
 		}
 		writer.WriteEndObject();
 	}
@@ -62,7 +62,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						obj.Items = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer0.Instance.Deserialize(ref reader),
+							JsonTokenType.StartArray => InternalSerializer0.Deserialize(ref reader, obj.Items ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items: {unexpected} ")
 						};
 						break;
@@ -102,7 +102,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						obj.Items2 = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer1.Instance.Deserialize(ref reader),
+							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Items2 ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items2: {unexpected} ")
 						};
 						break;
@@ -123,24 +123,21 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			}
 		}
 	}
-	private class InternalSerializer0 : IJsonSerializer<List<Int32>>
+	private static class InternalSerializer0
 	{
-		public static readonly IJsonSerializer<List<Int32>> Instance = new InternalSerializer0();
-
-		public void Serialize(ref Utf8JsonWriter writer, List<Int32> value)
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int32>
 		{
-			if (value is null) { writer.WriteNullValue(); return; }
+			if (array is null) { writer.WriteNullValue(); return; }
 			writer.WriteStartArray();
-			foreach (var item in value)
+			foreach (var item in array)
 			{
 				writer.WriteNumberValue(item);
 			}
 			writer.WriteEndArray();
 		}
 
-		public List<Int32> Deserialize(ref Utf8JsonReader reader)
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int32>
 		{
-			var obj = new List<Int32>();
 			while (true)
 			{
 				switch (Next(ref reader))
@@ -152,12 +149,13 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 					}
 					case JsonTokenType.Number:
 					{
-						obj.Add(reader.GetInt32());
+						var item = reader.GetInt32();
+						array.Add(item);
 						break;
 					}
 					case JsonTokenType.EndArray:
 					{
-						return obj;
+						return array;
 					}
 					default:
 					{
@@ -168,24 +166,21 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			}
 		}
 	}
-	private class InternalSerializer1 : IJsonSerializer<List<Sample>>
+	private static class InternalSerializer1
 	{
-		public static readonly IJsonSerializer<List<Sample>> Instance = new InternalSerializer1();
-
-		public void Serialize(ref Utf8JsonWriter writer, List<Sample> value)
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Sample>
 		{
-			if (value is null) { writer.WriteNullValue(); return; }
+			if (array is null) { writer.WriteNullValue(); return; }
 			writer.WriteStartArray();
-			foreach (var item in value)
+			foreach (var item in array)
 			{
 				Sample.Serialize(ref writer, item);
 			}
 			writer.WriteEndArray();
 		}
 
-		public List<Sample> Deserialize(ref Utf8JsonReader reader)
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Sample>
 		{
-			var obj = new List<Sample>();
 			while (true)
 			{
 				switch (Next(ref reader))
@@ -197,12 +192,14 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 					}
 					case JsonTokenType.StartObject:
 					{
-						obj.Add(Sample.Deserialize(ref reader));
+						var item = new Sample();
+						Sample.Deserialize(ref reader);
+						array.Add(item);
 						break;
 					}
 					case JsonTokenType.EndArray:
 					{
-						return obj;
+						return array;
 					}
 					default:
 					{

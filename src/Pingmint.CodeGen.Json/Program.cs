@@ -273,7 +273,7 @@ internal static class Program
                         Key = prop.Key,
                         PropertyName = prop.Name,
                         Type = Model.Code.ObjectNodePropertyType.Array,
-                        ItemSetter = new Model.Code.InternalSetter(className + ".Instance"),
+                        ItemSetter = new Model.Code.InternalArraySetter(className),
                     });
                 }
                 else
@@ -464,7 +464,12 @@ internal static class Program
             using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
             {
                 code.Line("JsonTokenType.Null => null,");
-                code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader));
+                switch (prop.Type)
+                {
+                    case Model.Code.ObjectNodePropertyType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                    case Model.Code.ObjectNodePropertyType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                    default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                }
                 code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
             }
             code.Line("break;");
@@ -480,35 +485,28 @@ internal static class Program
         _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {type}")
     };
 
-    private static void WriteModelAdder(CodeWriter code, String reader, Model.Code.ArrayNode prop)
-    {
-        code.Line("obj.Add({0});", prop.ItemSetter.GetDeserializeExpression(reader));
-    }
-
     private static void WriteArrayNode(CodeWriter code, Model.Code.ArrayNode node)
     {
         var internalSerializerName = node.ClassName;
-        var internalSerializerType = $"List<{node.ItemTypeName}>";
+        var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        using (code.Class("private", internalSerializerName, $"IJsonSerializer<{internalSerializerType}>"))
+        using (code.Class("private static", internalSerializerName))
         {
-            code.Line("public static readonly IJsonSerializer<{0}> Instance = new {1}();", internalSerializerType, internalSerializerName);
-            code.Line();
-
-            using (code.Method("public", "void", "Serialize", $"ref Utf8JsonWriter writer, {internalSerializerType} value"))
+            code.Line($"public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+            using (code.CreateBraceScope())
             {
-                code.Line("if (value is null) { writer.WriteNullValue(); return; }");
+                code.Line("if (array is null) { writer.WriteNullValue(); return; }");
                 code.Line("writer.WriteStartArray();");
-                using (code.ForEach("var item in value"))
+                using (code.ForEach("var item in array"))
                 {
                     node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
                 }
                 code.Line("writer.WriteEndArray();");
             }
             code.Line();
-            using (code.Method("public", internalSerializerType, "Deserialize", "ref Utf8JsonReader reader"))
+            code.Line($"public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+            using (code.CreateBraceScope())
             {
-                code.Line("var obj = new {0}();", internalSerializerType);
                 using (code.While("true"))
                 {
                     using (code.Switch("Next(ref reader)"))
@@ -523,12 +521,29 @@ internal static class Program
                         }
                         using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
                         {
-                            WriteModelAdder(code, reader, node);
+                            switch (node.Type)
+                            {
+                                case Model.Code.ObjectNodePropertyType.String:
+                                case Model.Code.ObjectNodePropertyType.Number:
+                                {
+                                    node.ItemSetter.WriteDeserializeStatement(code, reader, "var item");
+                                    code.Line("array.Add({0});", "item");
+                                    break;
+                                }
+                                default:
+                                {
+                                    code.Line($"var item = new {internalSerializerItemType}();");
+                                    node.ItemSetter.WriteDeserializeStatement(code, reader, "item");
+                                    code.Line("array.Add({0});", "item");
+                                    break;
+                                }
+                            }
+
                             code.Line("break;");
                         }
                         using (code.SwitchCase("JsonTokenType.EndArray"))
                         {
-                            code.Line("return obj;");
+                            code.Line("return array;");
                         }
                         using (code.SwitchDefault())
                         {
