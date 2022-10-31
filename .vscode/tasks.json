@@ -53,7 +53,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "generate sample",
+            "label": "run",
             "command": "dotnet",
             "type": "process",
             "args": [
@@ -71,7 +71,7 @@
             ],
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
+                "cwd": "${workspaceFolder}/test"
             }
         },
         {
@@ -103,22 +103,11 @@
             }
         },
         {
-            "label": "build, run",
+            "label": "test end-to-end",
             "dependsOrder": "sequence",
             "dependsOn": [
                 "build",
-                "generate sample"
-            ],
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "exercise",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "build",
-                "generate sample",
-                "build",
-                "generate sample",
+                "run",
                 "test"
             ],
             "problemMatcher": "$msCompile"

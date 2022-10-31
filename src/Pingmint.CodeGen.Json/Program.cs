@@ -1,5 +1,4 @@
 ﻿using Pingmint.CodeGen.CSharp;
-using Pingmint.CodeGen.Json.Test;
 
 using static System.Console;
 
