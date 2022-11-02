@@ -207,8 +207,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 					}
 					case JsonTokenType.StartObject:
 					{
-						var item = new Sample();
-						Sample.Deserialize(ref reader);
+						var item = Sample.Deserialize(ref reader);
 						array.Add(item);
 						break;
 					}
