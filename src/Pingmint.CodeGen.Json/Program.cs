@@ -419,7 +419,7 @@ internal static class Program
         {
             code.Line("if (value is null) { writer.WriteNullValue(); return; }");
             code.Line("writer.WriteStartObject();");
-            if (node.Properties.Count > 0)
+            if (node.Properties.Count > 0 || node.WildcardProperty is not null)
             {
                 foreach (var prop in node.Properties)
                 {
@@ -451,7 +451,7 @@ internal static class Program
             {
                 using (code.Switch("Next(ref reader)"))
                 {
-                    if (node.Properties.Count > 0)
+                    if (node.Properties.Count > 0 || node.WildcardProperty is not null)
                     {
                         using (code.SwitchCase("JsonTokenType.PropertyName"))
                         {
