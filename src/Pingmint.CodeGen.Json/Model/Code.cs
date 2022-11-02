@@ -113,7 +113,7 @@ public class InternalSetter : ISetter
         String.Format("{0}.Deserialize(ref {1})", this.Serializer, reader);
 
     public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
-        code.Line("{0}.Deserialize(ref {1});", this.Serializer, reader, target);
+        code.Line("{2} = {0}.Deserialize(ref {1});", this.Serializer, reader, target);
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
         code.Line("{0}.Serialize(ref {1}, {2});", this.Serializer, writer, value);
@@ -132,7 +132,7 @@ public class InternalArraySetter : ISetter
         String.Format("{0}.Deserialize(ref {1}, {2})", this.Serializer, reader, target);
 
     public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
-        code.Line("{0}.Deserialize(ref {1}, {2});", this.Serializer, reader, target);
+        code.Line("{2} = {0}.Deserialize(ref {1}, {2});", this.Serializer, reader, target);
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
         code.Line("{0}.Serialize(ref {1}, {2});", this.Serializer, writer, value);

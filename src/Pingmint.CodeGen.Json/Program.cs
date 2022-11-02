@@ -586,6 +586,8 @@ internal static class Program
                             {
                                 case Model.Code.NodeType.String:
                                 case Model.Code.NodeType.Number:
+                                case Model.Code.NodeType.Object:
+                                case var other when node.ItemSetter is not null:
                                 {
                                     node.ItemSetter.WriteDeserializeStatement(code, reader, "var item");
                                     code.Line("array.Add({0});", "item");
@@ -593,10 +595,7 @@ internal static class Program
                                 }
                                 default:
                                 {
-                                    code.Line($"var item = new {internalSerializerItemType}();");
-                                    node.ItemSetter.WriteDeserializeStatement(code, reader, "item");
-                                    code.Line("array.Add({0});", "item");
-                                    break;
+                                    throw new InvalidOperationException($"Unexpected node type in {nameof(WriteArrayNode)}: {node.Type}");
                                 }
                             }
 
