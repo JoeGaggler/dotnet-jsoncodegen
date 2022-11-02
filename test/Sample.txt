@@ -4,3 +4,4 @@ Sample
 - id => Id : Int32
 - recursion => Recursion : Sample
 - items2 => Items2 : [Sample]
+- * => Extensions : {String}

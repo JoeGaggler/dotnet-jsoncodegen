@@ -19,4 +19,5 @@ sealed class PropertyNode
     public String Name { get; set; }
     public String Type { get; set; }
     public Boolean IsArray { get; set; }
+    public Boolean IsDictionary { get; set; }
 }

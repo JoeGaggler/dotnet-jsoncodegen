@@ -45,6 +45,14 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			writer.WritePropertyName("items2");
 			InternalSerializer1.Serialize(ref writer, localItems2);
 		}
+		if (value.Extensions is { } localExtensions)
+		{
+			foreach (var (localExtensionsKey, localExtensionsValue) in localExtensions)
+			{
+				writer.WritePropertyName(localExtensionsKey);
+				writer.WriteStringValue(localExtensionsValue);
+			}
+		}
 		writer.WriteEndObject();
 	}
 
@@ -67,7 +75,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
-					if (reader.ValueTextEquals("name"))
+					else if (reader.ValueTextEquals("name"))
 					{
 						obj.Name = Next(ref reader) switch
 						{
@@ -77,7 +85,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
-					if (reader.ValueTextEquals("id"))
+					else if (reader.ValueTextEquals("id"))
 					{
 						obj.Id = Next(ref reader) switch
 						{
@@ -87,7 +95,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
-					if (reader.ValueTextEquals("recursion"))
+					else if (reader.ValueTextEquals("recursion"))
 					{
 						obj.Recursion = Next(ref reader) switch
 						{
@@ -97,7 +105,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
-					if (reader.ValueTextEquals("items2"))
+					else if (reader.ValueTextEquals("items2"))
 					{
 						obj.Items2 = Next(ref reader) switch
 						{
@@ -107,8 +115,15 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
-
-					reader.Skip();
+					obj.Extensions ??= new();
+					var lhs = reader.GetString() ?? throw new NullReferenceException();
+					var rhs = Next(ref reader) switch
+					{
+						JsonTokenType.Null => null,
+						JsonTokenType.String => reader.GetString(),
+						var unexpected => throw new InvalidOperationException($"unexpected token type for Extensions: {unexpected} ")
+					};
+					obj.Extensions.Add(lhs, rhs);
 					break;
 				}
 				case JsonTokenType.EndObject:
@@ -218,4 +233,5 @@ public sealed partial class Sample
 	public Int32? Id { get; set; }
 	public Sample? Recursion { get; set; }
 	public List<Sample>? Items2 { get; set; }
+	public Dictionary<String, String>? Extensions { get; set; }
 }

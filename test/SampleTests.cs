@@ -14,29 +14,7 @@ public class SampleTests
     [Test]
     public void Test1()
     {
-        var json = """
-        {
-            "items": [
-                1,
-                2,
-                4
-            ],
-            "otherskip4": true,
-            "name": "hi",
-            "otherskip3": true,
-            "id": 1,
-            "skip": {
-                "this": 1
-            },
-            "otherskip2": true,
-            "recursion": {
-                "id": 2,
-                "name": "two"
-            },
-            "otherskip": true
-        }
-        """;
-
+        var json = File.ReadAllText("Sample.json");
 
         Pingmint.CodeGen.Json.Test.IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample> ser = new SampleSerializer();
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));

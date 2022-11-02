@@ -60,9 +60,9 @@
                 "run",
                 "--",
                 "--input",
-                "Sample.txt",
+                "../../test/Sample.txt",
                 "--output",
-                "SampleSerializer.cs",
+                "../../test/SampleSerializer.cs",
                 "--class",
                 "Pingmint.CodeGen.Json.Test.SampleSerializer",
                 "-m",
@@ -71,7 +71,7 @@
             ],
             "problemMatcher": "$msCompile",
             "options": {
-                "cwd": "${workspaceFolder}/test"
+                "cwd": "${workspaceFolder}/src/Pingmint.CodeGen.Json"
             }
         },
         {

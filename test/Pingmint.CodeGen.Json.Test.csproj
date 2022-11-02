@@ -21,4 +21,8 @@
     <ProjectReference Include="..\src\Pingmint.CodeGen.Json\Pingmint.CodeGen.Json.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Sample.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -12,6 +12,8 @@ public class Root
     public List<ClassNode> Classes { get; set; }
 }
 
+public enum NodeType { Number, String, Boolean, Object, Array }
+
 public class ObjectNode
 {
     public String ClassNamespace { get; set; }
@@ -20,15 +22,14 @@ public class ObjectNode
     public String? ClassAccessModifier { get; set; }
     public String SharedInstanceName { get; set; }
     public List<ObjectNodeProperty> Properties { get; set; }
+    public ObjectNodeProperty WildcardProperty { get; set; }
 }
-
-public enum ObjectNodePropertyType { Number, String, Boolean, Object, Array }
 
 public class ObjectNodeProperty
 {
     public String Key { get; set; }
     public String PropertyName { get; set; }
-    public ObjectNodePropertyType Type { get; set; }
+    public NodeType Type { get; set; }
     public ISetter ItemSetter { get; set; }
 }
 
@@ -37,7 +38,7 @@ public class ArrayNode
     public String ClassName { get; set; }
     public String ItemTypeName { get; set; }
     public ISetter ItemSetter { get; set; }
-    public ObjectNodePropertyType Type { get; set; }
+    public NodeType Type { get; set; }
 }
 
 public class ClassNode

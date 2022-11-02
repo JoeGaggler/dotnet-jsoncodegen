@@ -115,15 +115,13 @@ internal static class Program
         var nodes = new List<Model.Syntax.ObjectNode>();
         var props = new List<Model.Syntax.PropertyNode>();
 
-        String? parent = null;
+        var current = new Model.Syntax.ObjectNode() { Properties = props };
         void Post()
         {
-            if (parent == null) return;
-            nodes.Add(new()
-            {
-                Name = parent,
-                Properties = props,
-            });
+            if (current.Name == null) return;
+            nodes.Add(current);
+            props = new();
+            current = new() { Properties = props };
         }
         foreach (var line in inputLines)
         {
@@ -134,9 +132,15 @@ internal static class Program
                 var trim2 = trim[1..].Trim();
                 if (trim2.Split(':', 2, StringSplitOptions.TrimEntries) is not [String leftSide, String rightSide]) throw new InvalidOperationException("unable to parse property type");
                 bool isArray = false;
+                bool isDict = false;
                 if (rightSide.StartsWith('[') && rightSide.EndsWith(']'))
                 {
                     isArray = true;
+                    rightSide = rightSide[1..^1];
+                }
+                if (rightSide.StartsWith('{') && rightSide.EndsWith('}'))
+                {
+                    isDict = true;
                     rightSide = rightSide[1..^1];
                 }
                 if (leftSide.Split("=>", 2, StringSplitOptions.TrimEntries) is not [String key, String name])
@@ -145,19 +149,20 @@ internal static class Program
                     name = leftSide;
                 }
                 key = TrimEnclosure(key, '"', '"');
-                props.Add(new()
+                Model.Syntax.PropertyNode item = new()
                 {
                     Key = key,
                     Name = name,
                     Type = rightSide,
                     IsArray = isArray,
-                });
+                    IsDictionary = isDict,
+                };
+                props.Add(item);
             }
             else
             {
                 Post();
-                parent = trim;
-                props = new();
+                current.Name = trim;
             }
         }
         Post();
@@ -211,24 +216,24 @@ internal static class Program
             };
             codeClasses.Add(classNode);
 
-            static (Model.Code.ISetter, Model.Code.ObjectNodePropertyType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
+            static (Model.Code.ISetter, Model.Code.NodeType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
             {
                 Model.Code.ISetter itemSetter;
-                Model.Code.ObjectNodePropertyType itemType;
+                Model.Code.NodeType itemType;
                 switch (type)
                 {
                     case "int":
                     case "Int32":
                     {
                         itemSetter = Model.Code.IntSetter.Instance;
-                        itemType = Model.Code.ObjectNodePropertyType.Number;
+                        itemType = Model.Code.NodeType.Number;
                         break;
                     }
                     case "string":
                     case "String":
                     {
                         itemSetter = Model.Code.StringSetter.Instance;
-                        itemType = Model.Code.ObjectNodePropertyType.String;
+                        itemType = Model.Code.NodeType.String;
                         break;
                     }
                     // TODO: array of arrays
@@ -240,7 +245,7 @@ internal static class Program
                             throw new InvalidOperationException($"Unable to find requested type: {type}");
                         }
                         itemSetter = new Model.Code.InternalSetter(foundNode.SharedInstanceName);
-                        itemType = Model.Code.ObjectNodePropertyType.Object;
+                        itemType = Model.Code.NodeType.Object;
                         break;
                     }
                 }
@@ -252,7 +257,7 @@ internal static class Program
                 classProps.Add(new()
                 {
                     Name = prop.Name,
-                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.Type,
+                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}>" : prop.Type,
                 });
 
                 if (prop.IsArray)
@@ -271,9 +276,20 @@ internal static class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
-                        Type = Model.Code.ObjectNodePropertyType.Array,
+                        Type = Model.Code.NodeType.Array,
                         ItemSetter = new Model.Code.InternalArraySetter(className),
                     });
+                }
+                else if (prop.IsDictionary)
+                {
+                    if (prop.Key != "*") { throw new NotSupportedException("Custom dictionaries are not yet supported"); }
+                    var add = new Model.Code.ObjectNodeProperty
+                    {
+                        Key = prop.Key,
+                        PropertyName = prop.Name,
+                    };
+                    (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
+                    codeNode.WildcardProperty = add;
                 }
                 else
                 {
@@ -414,6 +430,16 @@ internal static class Program
                         prop.ItemSetter.WriteSerializeStatement(code, "writer", localName);
                     }
                 }
+                if (node.WildcardProperty is { } prop2)
+                {
+                    var localName = $"local{prop2.PropertyName}";
+                    using (code.If("value.{0} is {{ }} {1}", prop2.PropertyName, localName))
+                    using (code.ForEach($"var ({localName}Key, {localName}Value) in {localName}"))
+                    {
+                        code.Line("writer.WritePropertyName({0});", $"{localName}Key");
+                        prop2.ItemSetter.WriteSerializeStatement(code, "writer", $"{localName}Value");
+                    }
+                }
             }
             code.Line("writer.WriteEndObject();");
         }
@@ -429,13 +455,23 @@ internal static class Program
                     {
                         using (code.SwitchCase("JsonTokenType.PropertyName"))
                         {
+                            bool isFirst = true;
+                            bool didHandleWildcard = false;
                             foreach (var prop in node.Properties)
                             {
-                                WriteObjectNodeProperty(code, prop);
+                                WriteObjectNodeProperty(code, prop, isFirst);
+                                isFirst = false;
                             }
-                            code.Line();
-                            code.Line("reader.Skip();");
-                            code.Line("break;");
+                            if (node.WildcardProperty is { } wildcard)
+                            {
+                                WriteWildcardProperty(code, wildcard, isFirst);
+                            }
+                            else
+                            {
+                                code.Line();
+                                code.Line("reader.Skip();");
+                                code.Line("break;");
+                            }
                         }
                     }
                     using (code.SwitchCase("JsonTokenType.EndObject"))
@@ -452,9 +488,35 @@ internal static class Program
         }
     }
 
-    private static void WriteObjectNodeProperty(CodeWriter code, Model.Code.ObjectNodeProperty prop)
+    private static void WriteWildcardProperty(CodeWriter code, Model.Code.ObjectNodeProperty prop, Boolean isFirst)
     {
-        using (code.If("reader.ValueTextEquals(\"{0}\")", prop.Key))
+        var reader = "reader";
+        var jsonTokenType = GetTokenTypeFromPropertyType(prop.Type);
+
+        code.Line("obj.{0} ??= new();", prop.PropertyName);
+        code.Line("var lhs = reader.GetString() ?? throw new NullReferenceException();");
+        code.Line("var rhs = Next(ref reader) switch", prop.PropertyName);
+        using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
+        {
+            code.Line("JsonTokenType.Null => null,");
+            switch (prop.Type)
+            {
+                case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+            }
+            code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
+        }
+        code.Line("obj.{0}.Add(lhs, rhs);", prop.PropertyName);
+        code.Line("break;");
+    }
+
+    private static void WriteObjectNodeProperty(CodeWriter code, Model.Code.ObjectNodeProperty prop, Boolean isFirst)
+    {
+        var which = isFirst ?
+            code.If("reader.ValueTextEquals(\"{0}\")", prop.Key) :
+            code.ElseIf("reader.ValueTextEquals(\"{0}\")", prop.Key);
+        using (which)
         {
             var reader = "reader";
             var jsonTokenType = GetTokenTypeFromPropertyType(prop.Type);
@@ -465,8 +527,8 @@ internal static class Program
                 code.Line("JsonTokenType.Null => null,");
                 switch (prop.Type)
                 {
-                    case Model.Code.ObjectNodePropertyType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
-                    case Model.Code.ObjectNodePropertyType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                    case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                    case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
                     default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
                 }
                 code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
@@ -475,12 +537,12 @@ internal static class Program
         }
     }
 
-    private static String GetTokenTypeFromPropertyType(Model.Code.ObjectNodePropertyType type) => type switch
+    private static String GetTokenTypeFromPropertyType(Model.Code.NodeType type) => type switch
     {
-        Model.Code.ObjectNodePropertyType.Array => "StartArray",
-        Model.Code.ObjectNodePropertyType.Object => "StartObject",
-        Model.Code.ObjectNodePropertyType.String => "String",
-        Model.Code.ObjectNodePropertyType.Number => "Number",
+        Model.Code.NodeType.Array => "StartArray",
+        Model.Code.NodeType.Object => "StartObject",
+        Model.Code.NodeType.String => "String",
+        Model.Code.NodeType.Number => "Number",
         _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {type}")
     };
 
@@ -522,8 +584,8 @@ internal static class Program
                         {
                             switch (node.Type)
                             {
-                                case Model.Code.ObjectNodePropertyType.String:
-                                case Model.Code.ObjectNodePropertyType.Number:
+                                case Model.Code.NodeType.String:
+                                case Model.Code.NodeType.Number:
                                 {
                                     node.ItemSetter.WriteDeserializeStatement(code, reader, "var item");
                                     code.Line("array.Add({0});", "item");

@@ -52,3 +52,20 @@ The properties mappings consist of three basic parts:
 * C# property type
 
 The `children` property has a type of `[Person]`, which means an array of `Person` objects. The C# property can be any collection type that has an `Add(Person p)` method and likewise implements an enumerable with `Person` elements.
+
+## Schema
+
+In addition to the objects and arrays demonstrated in the previous section, the schema also supports the following:
+
+### Wildcard property
+
+In some models, an object member's name is unspecified, but is still useful. For this reason the schema respresent a "wildcard" property key, as shown here:
+
+```
+Person
+- name => Name : string
+- * => Data : {string}
+```
+
+When a `Person` is deserialized, the `name` property will populate into the `Name` field, however any unspecified properties will instead populate `Data`, which is represented as a C# `Dictionary<String, T>` where `T` is the type indicated inside the braces.
+
