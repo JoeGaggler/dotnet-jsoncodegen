@@ -12,5 +12,7 @@
     "recursion": {
         "id": 2,
         "name": "two"
-    }
+    },
+    "isTrue" : false,
+    "bools" : [true, false, false, true]
 }
