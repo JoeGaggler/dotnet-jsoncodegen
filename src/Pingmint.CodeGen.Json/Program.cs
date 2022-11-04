@@ -313,11 +313,6 @@ internal static class Program
                     if (!skipSerializer)
                     {
                         var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
-                        if (className == "InternalSerializer3")
-                        {
-                            Console.Write($"DEBUG: {prop.Key}");
-                            return;
-                        }
                         var array = new Model.Code.ArrayNode()
                         {
                             ClassName = className,
