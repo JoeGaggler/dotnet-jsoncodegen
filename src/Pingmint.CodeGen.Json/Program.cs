@@ -235,6 +235,20 @@ internal static class Program
             };
             codeClasses.Add(classNode);
 
+            if (syntaxNode.Inherit is { } inherit)
+            {
+                var list = classNode.Inherit = new();
+                foreach (var type in inherit)
+                {
+                    var foundNode = syntax.Objects.FirstOrDefault(i => i.Name == type);
+                    if (foundNode == null)
+                    {
+                        throw new InvalidOperationException($"Unable to find requested type: {type}");
+                    }
+                    list.Add(foundNode.Name);
+                }
+            }
+
             static (Model.Code.ISetter, Model.Code.NodeType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
             {
                 Model.Code.ISetter itemSetter;
@@ -336,9 +350,9 @@ internal static class Program
                     props.Add(add);
                 }
             }
-            if (syntaxNode.Inherit is { } inherit)
+            if (syntaxNode.Inherit is { } inherit2)
             {
-                foreach (var type in inherit)
+                foreach (var type in inherit2)
                 {
                     var foundNode = syntax.Objects.FirstOrDefault(i => i.Name == type);
                     if (foundNode == null)
@@ -424,7 +438,10 @@ internal static class Program
             else
             {
                 var modifiers = type.ClassAccessModifier is { } access ? $"{access} sealed" : "sealed";
-                using (code.PartialClass(modifiers, type.ClassName))
+                var which = (type.Inherit is { } inherit) ?
+                    code.PartialClass(modifiers, type.ClassName, String.Join(", ", inherit)) :
+                    code.PartialClass(modifiers, type.ClassName);
+                using (which)
                 {
                     foreach (var prop in type.Properties)
                     {

@@ -48,6 +48,7 @@ public class ClassNode
     public String? ClassAccessModifier { get; set; }
     public List<ClassPropertyNode> Properties { get; set; }
     public Boolean IsInterface { get; set; }
+    public List<String> Inherit { get; set; }
 }
 
 public class ClassPropertyNode

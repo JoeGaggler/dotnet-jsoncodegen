@@ -310,7 +310,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		}
 	}
 }
-public sealed partial class Sample
+public sealed partial class Sample : ICount, IName
 {
 	public int? Count { get; set; }
 	public bool? IsTrue { get; set; }
