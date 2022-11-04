@@ -20,15 +20,10 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartObject();
-		if (value.Items is { } localItems)
+		if (value.Count is { } localCount)
 		{
-			writer.WritePropertyName("items");
-			InternalSerializer0.Serialize(ref writer, localItems);
-		}
-		if (value.Name is { } localName)
-		{
-			writer.WritePropertyName("name");
-			writer.WriteStringValue(localName);
+			writer.WritePropertyName("count");
+			writer.WriteNumberValue(localCount);
 		}
 		if (value.IsTrue is { } localIsTrue)
 		{
@@ -38,7 +33,17 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		if (value.Bools is { } localBools)
 		{
 			writer.WritePropertyName("bools");
-			InternalSerializer1.Serialize(ref writer, localBools);
+			InternalSerializer0.Serialize(ref writer, localBools);
+		}
+		if (value.Name is { } localName)
+		{
+			writer.WritePropertyName("name");
+			writer.WriteStringValue(localName);
+		}
+		if (value.Items is { } localItems)
+		{
+			writer.WritePropertyName("items");
+			InternalSerializer1.Serialize(ref writer, localItems);
 		}
 		if (value.Id is { } localId)
 		{
@@ -75,23 +80,13 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			{
 				case JsonTokenType.PropertyName:
 				{
-					if (reader.ValueTextEquals("items"))
+					if (reader.ValueTextEquals("count"))
 					{
-						obj.Items = Next(ref reader) switch
+						obj.Count = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer0.Deserialize(ref reader, obj.Items ?? new()),
-							var unexpected => throw new InvalidOperationException($"unexpected token type for Items: {unexpected} ")
-						};
-						break;
-					}
-					else if (reader.ValueTextEquals("name"))
-					{
-						obj.Name = Next(ref reader) switch
-						{
-							JsonTokenType.Null => null,
-							JsonTokenType.String => reader.GetString(),
-							var unexpected => throw new InvalidOperationException($"unexpected token type for Name: {unexpected} ")
+							JsonTokenType.Number => reader.GetInt32(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Count: {unexpected} ")
 						};
 						break;
 					}
@@ -111,8 +106,28 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						obj.Bools = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Bools ?? new()),
+							JsonTokenType.StartArray => InternalSerializer0.Deserialize(ref reader, obj.Bools ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Bools: {unexpected} ")
+						};
+						break;
+					}
+					else if (reader.ValueTextEquals("name"))
+					{
+						obj.Name = Next(ref reader) switch
+						{
+							JsonTokenType.Null => null,
+							JsonTokenType.String => reader.GetString(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Name: {unexpected} ")
+						};
+						break;
+					}
+					else if (reader.ValueTextEquals("items"))
+					{
+						obj.Items = Next(ref reader) switch
+						{
+							JsonTokenType.Null => null,
+							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Items ?? new()),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Items: {unexpected} ")
 						};
 						break;
 					}
@@ -171,6 +186,45 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 	}
 	private static class InternalSerializer0
 	{
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
+		{
+			if (array is null) { writer.WriteNullValue(); return; }
+			writer.WriteStartArray();
+			foreach (var item in array)
+			{
+				writer.WriteBooleanValue(item);
+			}
+			writer.WriteEndArray();
+		}
+
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+		{
+			while (true)
+			{
+				switch (Next(ref reader))
+				{
+					case JsonTokenType.Null:
+					{
+						reader.Skip();
+						break;
+					}
+					case JsonTokenType.True: array.Add(true); break;
+					case JsonTokenType.False: array.Add(false); break;
+					case JsonTokenType.EndArray:
+					{
+						return array;
+					}
+					default:
+					{
+						reader.Skip();
+						break;
+					}
+				}
+			}
+		}
+	}
+	private static class InternalSerializer1
+	{
 		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int32>
 		{
 			if (array is null) { writer.WriteNullValue(); return; }
@@ -199,45 +253,6 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						array.Add(item);
 						break;
 					}
-					case JsonTokenType.EndArray:
-					{
-						return array;
-					}
-					default:
-					{
-						reader.Skip();
-						break;
-					}
-				}
-			}
-		}
-	}
-	private static class InternalSerializer1
-	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
-		{
-			if (array is null) { writer.WriteNullValue(); return; }
-			writer.WriteStartArray();
-			foreach (var item in array)
-			{
-				writer.WriteBooleanValue(item);
-			}
-			writer.WriteEndArray();
-		}
-
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
-		{
-			while (true)
-			{
-				switch (Next(ref reader))
-				{
-					case JsonTokenType.Null:
-					{
-						reader.Skip();
-						break;
-					}
-					case JsonTokenType.True: array.Add(true); break;
-					case JsonTokenType.False: array.Add(false); break;
 					case JsonTokenType.EndArray:
 					{
 						return array;
@@ -297,12 +312,23 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 }
 public sealed partial class Sample
 {
-	public List<Int32>? Items { get; set; }
-	public String? Name { get; set; }
+	public int? Count { get; set; }
 	public bool? IsTrue { get; set; }
 	public List<bool>? Bools { get; set; }
+	public String? Name { get; set; }
+	public List<Int32>? Items { get; set; }
 	public Int32? Id { get; set; }
 	public Sample? Recursion { get; set; }
 	public List<Sample>? Items2 { get; set; }
 	public Dictionary<String, String>? Extensions { get; set; }
+}
+public partial interface IName
+{
+	String? Name { get; set; }
+}
+public partial interface ICount
+{
+	int? Count { get; set; }
+	bool? IsTrue { get; set; }
+	List<bool>? Bools { get; set; }
 }

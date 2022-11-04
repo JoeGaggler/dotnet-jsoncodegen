@@ -23,6 +23,7 @@ public class ObjectNode
     public String SharedInstanceName { get; set; }
     public List<ObjectNodeProperty> Properties { get; set; }
     public ObjectNodeProperty WildcardProperty { get; set; }
+    public Boolean IsInterface { get; set; }
 }
 
 public class ObjectNodeProperty
@@ -46,6 +47,7 @@ public class ClassNode
     public String ClassName { get; set; }
     public String? ClassAccessModifier { get; set; }
     public List<ClassPropertyNode> Properties { get; set; }
+    public Boolean IsInterface { get; set; }
 }
 
 public class ClassPropertyNode

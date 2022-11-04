@@ -1,9 +1,16 @@
-Sample
+Sample : ICount, IName
 - "items" => Items : [Int32]
-- name => Name : String
-- isTrue => IsTrue : bool
-- bools => Bools : [bool]
 - id => Id : Int32
 - recursion => Recursion : Sample
 - items2 => Items2 : [Sample]
 - * => Extensions : {String}
+
+// Comment test
+: IName
+- name => Name : String // end of line comment
+
+// Comment test
+: ICount
+- count => Count : int
+- isTrue => IsTrue : bool
+- bools => Bools : [bool]

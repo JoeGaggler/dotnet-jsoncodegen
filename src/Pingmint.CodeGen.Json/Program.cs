@@ -125,9 +125,17 @@ internal static class Program
         }
         foreach (var line in inputLines)
         {
-            var trim = line.Trim();
+            if (line.Split("//", 2, StringSplitOptions.TrimEntries) is not [String trim, ..]) continue;
             if (String.IsNullOrEmpty(trim)) { continue; }
-            if (trim.StartsWith("-"))
+            if (trim.StartsWith("//")) { continue; }
+
+            if (trim.StartsWith(":"))
+            {
+                Post();
+                current.Name = trim.Substring(1).Trim();
+                current.IsInterface = true;
+            }
+            else if (trim.StartsWith("-"))
             {
                 var trim2 = trim[1..].Trim();
                 if (trim2.Split(':', 2, StringSplitOptions.TrimEntries) is not [String leftSide, String rightSide]) throw new InvalidOperationException("unable to parse property type");
@@ -162,7 +170,16 @@ internal static class Program
             else
             {
                 Post();
-                current.Name = trim;
+                if (trim.Split(":", 2, StringSplitOptions.TrimEntries) is [String lhs, String rhs])
+                {
+                    current.Name = lhs;
+                    var inherit = rhs.Split(",", StringSplitOptions.TrimEntries);
+                    current.Inherit = inherit.ToList();
+                }
+                else
+                {
+                    current.Name = trim;
+                }
             }
         }
         Post();
@@ -198,6 +215,7 @@ internal static class Program
                 ClassAccessModifier = accessModifier,
                 SharedInstanceName = node.Name,
                 Properties = props,
+                IsInterface = node.IsInterface,
             });
         }
 
@@ -213,6 +231,7 @@ internal static class Program
                 ClassAccessModifier = codeNode.ClassAccessModifier,
                 ClassName = codeNode.ClassName,
                 Properties = classProps,
+                IsInterface = syntaxNode.IsInterface,
             };
             codeClasses.Add(classNode);
 
@@ -259,7 +278,7 @@ internal static class Program
                 return (itemSetter, itemType);
             }
 
-            foreach (var prop in syntaxNode.Properties)
+            void AddProp(Model.Syntax.PropertyNode prop, Boolean skipSerializer = false)
             {
                 classProps.Add(new()
                 {
@@ -269,16 +288,7 @@ internal static class Program
 
                 if (prop.IsArray)
                 {
-                    var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
                     var className = $"InternalSerializer{internalCount++}";
-                    var array = new Model.Code.ArrayNode()
-                    {
-                        ClassName = className,
-                        ItemTypeName = prop.Type,
-                        ItemSetter = itemSetter,
-                        Type = itemType,
-                    };
-                    codeArrays.Add(array);
                     props.Add(new()
                     {
                         Key = prop.Key,
@@ -286,6 +296,23 @@ internal static class Program
                         Type = Model.Code.NodeType.Array,
                         ItemSetter = new Model.Code.InternalArraySetter(className),
                     });
+                    if (!skipSerializer)
+                    {
+                        var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
+                        if (className == "InternalSerializer3")
+                        {
+                            Console.Write($"DEBUG: {prop.Key}");
+                            return;
+                        }
+                        var array = new Model.Code.ArrayNode()
+                        {
+                            ClassName = className,
+                            ItemTypeName = prop.Type,
+                            ItemSetter = itemSetter,
+                            Type = itemType,
+                        };
+                        codeArrays.Add(array);
+                    }
                 }
                 else if (prop.IsDictionary)
                 {
@@ -308,6 +335,26 @@ internal static class Program
                     (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
                     props.Add(add);
                 }
+            }
+            if (syntaxNode.Inherit is { } inherit)
+            {
+                foreach (var type in inherit)
+                {
+                    var foundNode = syntax.Objects.FirstOrDefault(i => i.Name == type);
+                    if (foundNode == null)
+                    {
+                        throw new InvalidOperationException($"Unable to find requested type: {type}");
+                    }
+                    foreach (var prop in foundNode.Properties)
+                    {
+                        AddProp(prop);
+                    }
+                }
+            }
+
+            foreach (var prop in syntaxNode.Properties)
+            {
+                AddProp(prop, skipSerializer: syntaxNode.IsInterface);
             }
         }
 
@@ -362,12 +409,27 @@ internal static class Program
 
         foreach (var type in root.Classes)
         {
-            var modifiers = type.ClassAccessModifier is { } access ? $"{access} sealed" : "sealed";
-            using (code.PartialClass(modifiers, type.ClassName))
+            if (type.IsInterface)
             {
-                foreach (var prop in type.Properties)
+                var modifiers = type.ClassAccessModifier is { } access ? $"{access} partial" : "partial";
+                code.Line($"{modifiers} interface {type.ClassName}");
+                using (code.CreateBraceScope())
                 {
-                    code.Line("public {0}? {1} {{ get; set; }}", GetShortTypeName(fileNamespace, prop.Type), prop.Name);
+                    foreach (var prop in type.Properties)
+                    {
+                        code.Line("{0}? {1} {{ get; set; }}", GetShortTypeName(fileNamespace, prop.Type), prop.Name);
+                    }
+                }
+            }
+            else
+            {
+                var modifiers = type.ClassAccessModifier is { } access ? $"{access} sealed" : "sealed";
+                using (code.PartialClass(modifiers, type.ClassName))
+                {
+                    foreach (var prop in type.Properties)
+                    {
+                        code.Line("public {0}? {1} {{ get; set; }}", GetShortTypeName(fileNamespace, prop.Type), prop.Name);
+                    }
                 }
             }
         }
@@ -388,9 +450,10 @@ internal static class Program
             WriteHelpers(code);
             code.Line();
 
-            foreach (var sampleNode in root.Objects)
+            foreach (var node in root.Objects)
             {
-                WriteObjectNode(code, sampleNode);
+                if (node.IsInterface) { continue; }
+                WriteObjectNode(code, node);
             }
 
             // Array
@@ -406,6 +469,7 @@ internal static class Program
         string? imp = null;
         foreach (var node in root.Objects)
         {
+            if (node.IsInterface) { continue; }
             var next = $"IJsonSerializer<{node.ClassFullName}>";
             imp += imp == null ? next : ", " + next;
         }
@@ -416,6 +480,7 @@ internal static class Program
     {
         foreach (var node in root.Objects)
         {
+            if (node.IsInterface) { continue; }
             code.Line("public static readonly IJsonSerializer<{0}> {2} = new {1}();", GetShortTypeName(root.FileNamespace, node.ClassFullName), GetShortTypeName(root.FileNamespace, root.ClassFullName), node.SharedInstanceName);
         }
     }

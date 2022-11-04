@@ -10,7 +10,9 @@ sealed class RootNode
 sealed class ObjectNode
 {
     public String Name { get; set; }
+    public Boolean IsInterface { get; set; }
     public List<PropertyNode> Properties { get; set; }
+    public List<String> Inherit { get; set; }
 }
 
 sealed class PropertyNode
