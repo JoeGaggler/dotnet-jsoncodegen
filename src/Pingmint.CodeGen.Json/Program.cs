@@ -222,6 +222,13 @@ internal static class Program
                 Model.Code.NodeType itemType;
                 switch (type)
                 {
+                    case "bool":
+                    case "Boolean":
+                    {
+                        itemSetter = Model.Code.BoolSetter.Instance;
+                        itemType = Model.Code.NodeType.Boolean;
+                        break;
+                    }
                     case "int":
                     case "Int32":
                     {
@@ -503,6 +510,12 @@ internal static class Program
             {
                 case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
                 case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                case Model.Code.NodeType.Boolean:
+                {
+                    code.Line("JsonTokenType.True => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                    code.Line("JsonTokenType.False => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                    break;
+                }
                 default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
             }
             code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
@@ -529,6 +542,12 @@ internal static class Program
                 {
                     case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
                     case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                    case Model.Code.NodeType.Boolean:
+                    {
+                        code.Line("JsonTokenType.True => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        code.Line("JsonTokenType.False => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        break;
+                    }
                     default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
                 }
                 code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
@@ -543,6 +562,7 @@ internal static class Program
         Model.Code.NodeType.Object => "StartObject",
         Model.Code.NodeType.String => "String",
         Model.Code.NodeType.Number => "Number",
+        Model.Code.NodeType.Boolean => "Boolean", // not real, actually "True" and "False"
         _ => throw new InvalidOperationException($"unexpected token type in {nameof(WriteObjectNodeProperty)}: {type}")
     };
 
@@ -572,7 +592,6 @@ internal static class Program
                 {
                     using (code.Switch("Next(ref reader)"))
                     {
-                        var jsonTokenType = GetTokenTypeFromPropertyType(node.Type);
 
                         using (code.SwitchCase("JsonTokenType.Null"))
                         {
@@ -580,27 +599,35 @@ internal static class Program
                             code.Line("reader.Skip();");
                             code.Line("break;");
                         }
-                        using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
+
+                        switch (node.Type)
                         {
-                            switch (node.Type)
+                            case Model.Code.NodeType.Boolean:
                             {
-                                case Model.Code.NodeType.String:
-                                case Model.Code.NodeType.Number:
-                                case Model.Code.NodeType.Object:
-                                case var other when node.ItemSetter is not null:
+                                code.Line($"case JsonTokenType.True: array.Add(true); break;");
+                                code.Line($"case JsonTokenType.False: array.Add(false); break;");
+                                break;
+                            }
+                            case Model.Code.NodeType.String:
+                            case Model.Code.NodeType.Number:
+                            case Model.Code.NodeType.Object:
+                            case var other when node.ItemSetter is not null:
+                            {
+                                var jsonTokenType = GetTokenTypeFromPropertyType(node.Type);
+                                using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
                                 {
                                     node.ItemSetter.WriteDeserializeStatement(code, reader, "var item");
                                     code.Line("array.Add({0});", "item");
-                                    break;
+                                    code.Line("break;");
                                 }
-                                default:
-                                {
-                                    throw new InvalidOperationException($"Unexpected node type in {nameof(WriteArrayNode)}: {node.Type}");
-                                }
+                                break;
                             }
-
-                            code.Line("break;");
+                            default:
+                            {
+                                throw new InvalidOperationException($"Unexpected node type in {nameof(WriteArrayNode)}: {node.Type}");
+                            }
                         }
+
                         using (code.SwitchCase("JsonTokenType.EndArray"))
                         {
                             code.Line("return array;");

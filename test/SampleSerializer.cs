@@ -30,6 +30,16 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			writer.WritePropertyName("name");
 			writer.WriteStringValue(localName);
 		}
+		if (value.IsTrue is { } localIsTrue)
+		{
+			writer.WritePropertyName("isTrue");
+			writer.WriteBooleanValue(localIsTrue);
+		}
+		if (value.Bools is { } localBools)
+		{
+			writer.WritePropertyName("bools");
+			InternalSerializer1.Serialize(ref writer, localBools);
+		}
 		if (value.Id is { } localId)
 		{
 			writer.WritePropertyName("id");
@@ -43,7 +53,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		if (value.Items2 is { } localItems2)
 		{
 			writer.WritePropertyName("items2");
-			InternalSerializer1.Serialize(ref writer, localItems2);
+			InternalSerializer2.Serialize(ref writer, localItems2);
 		}
 		if (value.Extensions is { } localExtensions)
 		{
@@ -85,6 +95,27 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						};
 						break;
 					}
+					else if (reader.ValueTextEquals("isTrue"))
+					{
+						obj.IsTrue = Next(ref reader) switch
+						{
+							JsonTokenType.Null => null,
+							JsonTokenType.True => reader.GetBoolean(),
+							JsonTokenType.False => reader.GetBoolean(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for IsTrue: {unexpected} ")
+						};
+						break;
+					}
+					else if (reader.ValueTextEquals("bools"))
+					{
+						obj.Bools = Next(ref reader) switch
+						{
+							JsonTokenType.Null => null,
+							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Bools ?? new()),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Bools: {unexpected} ")
+						};
+						break;
+					}
 					else if (reader.ValueTextEquals("id"))
 					{
 						obj.Id = Next(ref reader) switch
@@ -110,7 +141,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						obj.Items2 = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Items2 ?? new()),
+							JsonTokenType.StartArray => InternalSerializer2.Deserialize(ref reader, obj.Items2 ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items2: {unexpected} ")
 						};
 						break;
@@ -183,6 +214,45 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 	}
 	private static class InternalSerializer1
 	{
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
+		{
+			if (array is null) { writer.WriteNullValue(); return; }
+			writer.WriteStartArray();
+			foreach (var item in array)
+			{
+				writer.WriteBooleanValue(item);
+			}
+			writer.WriteEndArray();
+		}
+
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+		{
+			while (true)
+			{
+				switch (Next(ref reader))
+				{
+					case JsonTokenType.Null:
+					{
+						reader.Skip();
+						break;
+					}
+					case JsonTokenType.True: array.Add(true); break;
+					case JsonTokenType.False: array.Add(false); break;
+					case JsonTokenType.EndArray:
+					{
+						return array;
+					}
+					default:
+					{
+						reader.Skip();
+						break;
+					}
+				}
+			}
+		}
+	}
+	private static class InternalSerializer2
+	{
 		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Sample>
 		{
 			if (array is null) { writer.WriteNullValue(); return; }
@@ -229,6 +299,8 @@ public sealed partial class Sample
 {
 	public List<Int32>? Items { get; set; }
 	public String? Name { get; set; }
+	public bool? IsTrue { get; set; }
+	public List<bool>? Bools { get; set; }
 	public Int32? Id { get; set; }
 	public Sample? Recursion { get; set; }
 	public List<Sample>? Items2 { get; set; }

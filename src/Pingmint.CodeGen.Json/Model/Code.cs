@@ -87,6 +87,19 @@ public class IntSetter : ISetter
         code.Line("{0}.WriteNumberValue({1});", writer, value);
 }
 
+public class BoolSetter : ISetter
+{
+    public static readonly BoolSetter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetBoolean()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
+        code.Line($"{target} = {reader}.GetBoolean();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteBooleanValue({1});", writer, value);
+}
+
 public class StringSetter : ISetter
 {
     public static readonly StringSetter Instance = new();

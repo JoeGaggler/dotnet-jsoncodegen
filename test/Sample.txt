@@ -1,6 +1,8 @@
 Sample
 - "items" => Items : [Int32]
 - name => Name : String
+- isTrue => IsTrue : bool
+- bools => Bools : [bool]
 - id => Id : Int32
 - recursion => Recursion : Sample
 - items2 => Items2 : [Sample]
