@@ -10,13 +10,13 @@ public partial interface IJsonSerializer<T>
 	T Deserialize(ref Utf8JsonReader reader);
 	void Serialize(ref Utf8JsonWriter writer, T value);
 }
-public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>
+public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 {
-	public static readonly IJsonSerializer<Sample> Sample = new SampleSerializer();
+	public static readonly IJsonSerializer<Subspace.Sample> Subspace_Sample = new SampleSerializer();
 
 	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 
-	void IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Serialize(ref Utf8JsonWriter writer, Pingmint.CodeGen.Json.Test.Sample value)
+	void IJsonSerializer<Subspace.Sample>.Serialize(ref Utf8JsonWriter writer, Subspace.Sample value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartObject();
@@ -53,7 +53,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		if (value.Recursion is { } localRecursion)
 		{
 			writer.WritePropertyName("recursion");
-			Sample.Serialize(ref writer, localRecursion);
+			Subspace_Sample.Serialize(ref writer, localRecursion);
 		}
 		if (value.Items2 is { } localItems2)
 		{
@@ -71,9 +71,9 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 		writer.WriteEndObject();
 	}
 
-	Pingmint.CodeGen.Json.Test.Sample IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample>.Deserialize(ref Utf8JsonReader reader)
+	Subspace.Sample IJsonSerializer<Subspace.Sample>.Deserialize(ref Utf8JsonReader reader)
 	{
-		var obj = new Pingmint.CodeGen.Json.Test.Sample();
+		var obj = new Subspace.Sample();
 		while (true)
 		{
 			switch (Next(ref reader))
@@ -146,7 +146,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 						obj.Recursion = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartObject => Sample.Deserialize(ref reader),
+							JsonTokenType.StartObject => Subspace_Sample.Deserialize(ref reader),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Recursion: {unexpected} ")
 						};
 						break;
@@ -268,18 +268,18 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 	}
 	private static class InternalSerializer2
 	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Sample>
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample>
 		{
 			if (array is null) { writer.WriteNullValue(); return; }
 			writer.WriteStartArray();
 			foreach (var item in array)
 			{
-				Sample.Serialize(ref writer, item);
+				Subspace_Sample.Serialize(ref writer, item);
 			}
 			writer.WriteEndArray();
 		}
 
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Sample>
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
 		{
 			while (true)
 			{
@@ -292,7 +292,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 					}
 					case JsonTokenType.StartObject:
 					{
-						var item = Sample.Deserialize(ref reader);
+						var item = Subspace_Sample.Deserialize(ref reader);
 						array.Add(item);
 						break;
 					}
@@ -309,26 +309,4 @@ public sealed partial class SampleSerializer : IJsonSerializer<Pingmint.CodeGen.
 			}
 		}
 	}
-}
-public sealed partial class Sample : ICount, IName
-{
-	public int? Count { get; set; }
-	public bool? IsTrue { get; set; }
-	public List<bool>? Bools { get; set; }
-	public String? Name { get; set; }
-	public List<Int32>? Items { get; set; }
-	public Int32? Id { get; set; }
-	public Sample? Recursion { get; set; }
-	public List<Sample>? Items2 { get; set; }
-	public Dictionary<String, String>? Extensions { get; set; }
-}
-public partial interface IName
-{
-	String? Name { get; set; }
-}
-public partial interface ICount
-{
-	int? Count { get; set; }
-	bool? IsTrue { get; set; }
-	List<bool>? Bools { get; set; }
 }

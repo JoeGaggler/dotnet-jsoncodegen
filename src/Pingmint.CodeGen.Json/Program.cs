@@ -4,7 +4,7 @@ using static System.Console;
 
 namespace Pingmint.CodeGen.Json;
 
-internal static class Program
+internal static partial class Program
 {
     internal static int Main(string[] args)
     {
@@ -208,12 +208,30 @@ internal static class Program
         foreach (var node in syntax.Objects)
         {
             var props = new List<Model.Code.ObjectNodeProperty>();
+
+            String? classNamespace;
+            String className;
+            var index = node.Name.LastIndexOf('.');
+            if (index == -1)
+            {
+                classNamespace = null;
+                className = node.Name;
+            }
+            else
+            {
+                classNamespace = node.Name[..index];
+                className = node.Name[(index + 1)..];
+            }
+
+            // Replace namespace path with valid C# property name
+            var sharedInstanceName = PropertyNameRegex().Replace(node.Name, "_");
+
             codeObjects.Add(new()
             {
-                ClassNamespace = syntax.ClassNamespace,
-                ClassName = node.Name,
+                ClassNamespace = classNamespace,
+                ClassName = className,
                 ClassAccessModifier = accessModifier,
-                SharedInstanceName = node.Name,
+                SharedInstanceName = sharedInstanceName,
                 Properties = props,
                 IsInterface = node.IsInterface,
             });
@@ -223,7 +241,7 @@ internal static class Program
         {
             var props = codeNode.Properties;
 
-            if (syntaxNode.Name != codeNode.ClassName) throw new InvalidOperationException("assertion failed: mismatched syntax node and class node");
+            if (!syntaxNode.Name.EndsWith(codeNode.ClassName)) throw new InvalidOperationException("assertion failed: mismatched syntax node and class node");
 
             var classProps = new List<Model.Code.ClassPropertyNode>();
             var classNode = new Model.Code.ClassNode
@@ -279,7 +297,7 @@ internal static class Program
                     // TODO: array of arrays
                     default:
                     {
-                        var foundNode = codeObjects.FirstOrDefault(i => i.ClassName == type);
+                        var foundNode = codeObjects.FirstOrDefault(i => i.ClassFullName == type);
                         if (foundNode == null)
                         {
                             throw new InvalidOperationException($"Unable to find requested type: {type}");
@@ -726,4 +744,7 @@ internal static class Program
     }
 
     private static String GetShortTypeName(String fileNamespace, String typeName) => typeName.StartsWith(fileNamespace + ".") ? typeName.Substring(fileNamespace.Length + 1) : typeName;
+
+    [System.Text.RegularExpressions.GeneratedRegex("[^a-zA-Z0-9_]")]
+    private static partial System.Text.RegularExpressions.Regex PropertyNameRegex();
 }

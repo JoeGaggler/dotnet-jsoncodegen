@@ -65,7 +65,6 @@
                 "../../test/SampleSerializer.cs",
                 "--class",
                 "Pingmint.CodeGen.Json.Test.SampleSerializer",
-                "-m",
                 "-a",
                 "public"
             ],

@@ -16,7 +16,7 @@ public class SampleTests
     {
         var json = File.ReadAllText("Sample.json");
 
-        Pingmint.CodeGen.Json.Test.IJsonSerializer<Pingmint.CodeGen.Json.Test.Sample> ser = new SampleSerializer();
+        Pingmint.CodeGen.Json.Test.IJsonSerializer<Pingmint.CodeGen.Json.Test.Subspace.Sample> ser = new SampleSerializer();
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
         reader.Read();
         var model = ser.Deserialize(ref reader);
