@@ -16,9 +16,9 @@ public enum NodeType { Number, String, Boolean, Object, Array }
 
 public class ObjectNode
 {
-    public String ClassNamespace { get; set; }
+    public String? ClassNamespace { get; set; }
     public String ClassName { get; set; }
-    public String ClassFullName => $"{ClassNamespace}.{ClassName}";
+    public String ClassFullName => (ClassNamespace is null) ? ClassName : $"{ClassNamespace}.{ClassName}";
     public String? ClassAccessModifier { get; set; }
     public String SharedInstanceName { get; set; }
     public List<ObjectNodeProperty> Properties { get; set; }

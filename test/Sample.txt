@@ -1,8 +1,8 @@
-Sample : ICount, IName
+Subspace.Sample : ICount, IName
 - "items" => Items : [Int32]
 - id => Id : Int32
-- recursion => Recursion : Sample
-- items2 => Items2 : [Sample]
+- recursion => Recursion : Subspace.Sample
+- items2 => Items2 : [Subspace.Sample]
 - * => Extensions : {String}
 
 // Comment test
