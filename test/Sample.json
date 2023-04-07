@@ -14,5 +14,6 @@
         "name": "two"
     },
     "isTrue" : false,
-    "bools" : [true, false, false, true]
+    "bools" : [true, false, false, true],
+    "percent" : 0.13
 }

@@ -15,6 +15,7 @@ namespace Pingmint.CodeGen.Json.Test
             public String? Name { get; set; }
             public List<Int64>? Items { get; set; }
             public Int64? Id { get; set; }
+            public Decimal? Percent { get; set; }
             public Sample? Recursion { get; set; }
             public List<Sample>? Items2 { get; set; }
             public Dictionary<String, String>? Extensions { get; set; }

@@ -60,6 +60,11 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 			writer.WritePropertyName("items2");
 			InternalSerializer2.Serialize(ref writer, localItems2);
 		}
+		if (value.Percent is { } localPercent)
+		{
+			writer.WritePropertyName("percent");
+			writer.WriteNumberValue(localPercent);
+		}
 		if (value.Extensions is { } localExtensions)
 		{
 			foreach (var (localExtensionsKey, localExtensionsValue) in localExtensions)
@@ -158,6 +163,16 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 							JsonTokenType.Null => null,
 							JsonTokenType.StartArray => InternalSerializer2.Deserialize(ref reader, obj.Items2 ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items2: {unexpected} ")
+						};
+						break;
+					}
+					else if (reader.ValueTextEquals("percent"))
+					{
+						obj.Percent = Next(ref reader) switch
+						{
+							JsonTokenType.Null => null,
+							JsonTokenType.Number => reader.GetDecimal(),
+							var unexpected => throw new InvalidOperationException($"unexpected token type for Percent: {unexpected} ")
 						};
 						break;
 					}

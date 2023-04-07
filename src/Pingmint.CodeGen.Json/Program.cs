@@ -294,6 +294,27 @@ internal static partial class Program
                         itemType = Model.Code.NodeType.Number;
                         break;
                     }
+                    case "decimal":
+                    case "Decimal":
+                    {
+                        itemSetter = Model.Code.DecimalSetter.Instance;
+                        itemType = Model.Code.NodeType.Number;
+                        break;
+                    }
+                    case "float":
+                    case "Single":
+                    {
+                        itemSetter = Model.Code.FloatSetter.Instance;
+                        itemType = Model.Code.NodeType.Number;
+                        break;
+                    }
+                    case "double":
+                    case "Double":
+                    {
+                        itemSetter = Model.Code.DoubleSetter.Instance;
+                        itemType = Model.Code.NodeType.Number;
+                        break;
+                    }
                     case "string":
                     case "String":
                     {
