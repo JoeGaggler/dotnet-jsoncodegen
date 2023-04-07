@@ -1,6 +1,6 @@
 Subspace.Sample : ICount, IName
-- "items" => Items : [Int32]
-- id => Id : Int32
+- "items" => Items : [Int64]
+- id => Id : Int64
 - recursion => Recursion : Subspace.Sample
 - items2 => Items2 : [Subspace.Sample]
 - * => Extensions : {String}
@@ -11,6 +11,6 @@ Subspace.Sample : ICount, IName
 
 // Comment test
 : ICount
-- count => Count : int
+- count => Count : Int64
 - isTrue => IsTrue : bool
 - bools => Bools : [bool]
