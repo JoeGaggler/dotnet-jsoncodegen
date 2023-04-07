@@ -85,7 +85,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Count = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.Number => reader.GetInt32(),
+							JsonTokenType.Number => reader.GetInt64(),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Count: {unexpected} ")
 						};
 						break;
@@ -136,7 +136,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Id = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.Number => reader.GetInt32(),
+							JsonTokenType.Number => reader.GetInt64(),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Id: {unexpected} ")
 						};
 						break;
@@ -225,7 +225,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 	}
 	private static class InternalSerializer1
 	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int32>
+		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64>
 		{
 			if (array is null) { writer.WriteNullValue(); return; }
 			writer.WriteStartArray();
@@ -236,7 +236,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 			writer.WriteEndArray();
 		}
 
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int32>
+		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
 		{
 			while (true)
 			{
@@ -249,7 +249,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 					}
 					case JsonTokenType.Number:
 					{
-						var item = reader.GetInt32();
+						var item = reader.GetInt64();
 						array.Add(item);
 						break;
 					}

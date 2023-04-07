@@ -90,6 +90,19 @@ public class IntSetter : ISetter
         code.Line("{0}.WriteNumberValue({1});", writer, value);
 }
 
+public class Int64Setter : ISetter
+{
+    public static readonly Int64Setter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetInt64()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
+        code.Line($"{target} = {reader}.GetInt64();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteNumberValue({1});", writer, value);
+}
+
 public class BoolSetter : ISetter
 {
     public static readonly BoolSetter Instance = new();

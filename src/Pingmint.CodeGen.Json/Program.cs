@@ -287,6 +287,13 @@ internal static partial class Program
                         itemType = Model.Code.NodeType.Number;
                         break;
                     }
+                    case "long":
+                    case "Int64":
+                    {
+                        itemSetter = Model.Code.Int64Setter.Instance;
+                        itemType = Model.Code.NodeType.Number;
+                        break;
+                    }
                     case "string":
                     case "String":
                     {
