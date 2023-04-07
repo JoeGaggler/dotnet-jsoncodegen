@@ -3,6 +3,7 @@ Subspace.Sample : ICount, IName
 - id => Id : Int64
 - recursion => Recursion : Subspace.Sample
 - items2 => Items2 : [Subspace.Sample]
+- percent => Percent : Decimal
 - * => Extensions : {String}
 
 // Comment test

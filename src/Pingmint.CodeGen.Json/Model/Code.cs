@@ -103,6 +103,45 @@ public class Int64Setter : ISetter
         code.Line("{0}.WriteNumberValue({1});", writer, value);
 }
 
+public class DecimalSetter : ISetter
+{
+    public static readonly DecimalSetter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetDecimal()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
+        code.Line($"{target} = {reader}.GetDecimal();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteNumberValue({1});", writer, value);
+}
+
+public class FloatSetter : ISetter
+{
+    public static readonly FloatSetter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetSingle()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
+        code.Line($"{target} = {reader}.GetSingle();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteNumberValue({1});", writer, value);
+}
+
+public class DoubleSetter : ISetter
+{
+    public static readonly DoubleSetter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetDouble()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
+        code.Line($"{target} = {reader}.GetDouble();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteNumberValue({1});", writer, value);
+}
+
 public class BoolSetter : ISetter
 {
     public static readonly BoolSetter Instance = new();
