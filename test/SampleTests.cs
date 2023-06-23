@@ -16,10 +16,10 @@ public class SampleTests
     {
         var json = File.ReadAllText("Sample.json");
 
-        Pingmint.CodeGen.Json.Test.IJsonSerializer<Pingmint.CodeGen.Json.Test.Subspace.Sample> ser = new SampleSerializer();
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
-        reader.Read();
-        var model = ser.Deserialize(ref reader);
+        Assert.IsTrue(reader.Read());
+        SampleSerializer.Deserialize(ref reader, out var model);
+
         Assert.That(model.Name, Is.EqualTo("hi"));
 
         String outJson;
@@ -28,7 +28,7 @@ public class SampleTests
             var writer = new Utf8JsonWriter(mem, new JsonWriterOptions() { Indented = true });
             try
             {
-                ser.Serialize(ref writer, model);
+                SampleSerializer.Serialize(writer, model);
             }
             finally
             {
