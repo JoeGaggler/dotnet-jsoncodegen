@@ -5,18 +5,14 @@ using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-public partial interface IJsonSerializer<T>
+public static partial class SampleSerializer
 {
-	T Deserialize(ref Utf8JsonReader reader);
-	void Serialize(ref Utf8JsonWriter writer, T value);
-}
-public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
-{
-	public static readonly IJsonSerializer<Subspace.Sample> Subspace_Sample = new SampleSerializer();
-
 	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 
-	void IJsonSerializer<Subspace.Sample>.Serialize(ref Utf8JsonWriter writer, Subspace.Sample value)
+	private delegate void DeserializerDelegate<T>(ref Utf8JsonReader r, out T value);
+	private static T GetOutParam<T>(ref Utf8JsonReader reader, DeserializerDelegate<T> func) { func(ref reader, out T value); return value; }
+
+	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartObject();
@@ -33,7 +29,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 		if (value.Bools is { } localBools)
 		{
 			writer.WritePropertyName("bools");
-			InternalSerializer0.Serialize(ref writer, localBools);
+			Serialize0(writer, localBools);
 		}
 		if (value.Name is { } localName)
 		{
@@ -43,7 +39,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 		if (value.Items is { } localItems)
 		{
 			writer.WritePropertyName("items");
-			InternalSerializer1.Serialize(ref writer, localItems);
+			Serialize1(writer, localItems);
 		}
 		if (value.Id is { } localId)
 		{
@@ -53,12 +49,12 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 		if (value.Recursion is { } localRecursion)
 		{
 			writer.WritePropertyName("recursion");
-			Subspace_Sample.Serialize(ref writer, localRecursion);
+			Serialize(writer, localRecursion);
 		}
 		if (value.Items2 is { } localItems2)
 		{
 			writer.WritePropertyName("items2");
-			InternalSerializer2.Serialize(ref writer, localItems2);
+			Serialize2(writer, localItems2);
 		}
 		if (value.Percent is { } localPercent)
 		{
@@ -76,9 +72,9 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 		writer.WriteEndObject();
 	}
 
-	Subspace.Sample IJsonSerializer<Subspace.Sample>.Deserialize(ref Utf8JsonReader reader)
+	public static void Deserialize(ref Utf8JsonReader reader, out Subspace.Sample obj)
 	{
-		var obj = new Subspace.Sample();
+		obj = new Subspace.Sample();
 		while (true)
 		{
 			switch (Next(ref reader))
@@ -111,7 +107,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Bools = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer0.Deserialize(ref reader, obj.Bools ?? new()),
+							JsonTokenType.StartArray => Deserialize0(ref reader, obj.Bools ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Bools: {unexpected} ")
 						};
 						break;
@@ -131,7 +127,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Items = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer1.Deserialize(ref reader, obj.Items ?? new()),
+							JsonTokenType.StartArray => Deserialize1(ref reader, obj.Items ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items: {unexpected} ")
 						};
 						break;
@@ -151,7 +147,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Recursion = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartObject => Subspace_Sample.Deserialize(ref reader),
+							JsonTokenType.StartObject => GetOutParam<Subspace.Sample>(ref reader, Deserialize),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Recursion: {unexpected} ")
 						};
 						break;
@@ -161,7 +157,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 						obj.Items2 = Next(ref reader) switch
 						{
 							JsonTokenType.Null => null,
-							JsonTokenType.StartArray => InternalSerializer2.Deserialize(ref reader, obj.Items2 ?? new()),
+							JsonTokenType.StartArray => Deserialize2(ref reader, obj.Items2 ?? new()),
 							var unexpected => throw new InvalidOperationException($"unexpected token type for Items2: {unexpected} ")
 						};
 						break;
@@ -189,7 +185,7 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 				}
 				case JsonTokenType.EndObject:
 				{
-					return obj;
+					return;
 				}
 				default:
 				{
@@ -199,127 +195,119 @@ public sealed partial class SampleSerializer : IJsonSerializer<Subspace.Sample>
 			}
 		}
 	}
-	private static class InternalSerializer0
+	private static void Serialize0<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
 	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
+		if (array is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartArray();
+		foreach (var item in array)
 		{
-			if (array is null) { writer.WriteNullValue(); return; }
-			writer.WriteStartArray();
-			foreach (var item in array)
-			{
-				writer.WriteBooleanValue(item);
-			}
-			writer.WriteEndArray();
+			writer.WriteBooleanValue(item);
 		}
+		writer.WriteEndArray();
+	}
 
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+	private static TArray Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+	{
+		while (true)
 		{
-			while (true)
+			switch (Next(ref reader))
 			{
-				switch (Next(ref reader))
+				case JsonTokenType.Null:
 				{
-					case JsonTokenType.Null:
-					{
-						reader.Skip();
-						break;
-					}
-					case JsonTokenType.True: array.Add(true); break;
-					case JsonTokenType.False: array.Add(false); break;
-					case JsonTokenType.EndArray:
-					{
-						return array;
-					}
-					default:
-					{
-						reader.Skip();
-						break;
-					}
+					reader.Skip();
+					break;
+				}
+				case JsonTokenType.True: array.Add(true); break;
+				case JsonTokenType.False: array.Add(false); break;
+				case JsonTokenType.EndArray:
+				{
+					return array;
+				}
+				default:
+				{
+					reader.Skip();
+					break;
 				}
 			}
 		}
 	}
-	private static class InternalSerializer1
+	private static void Serialize1<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64>
 	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64>
+		if (array is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartArray();
+		foreach (var item in array)
 		{
-			if (array is null) { writer.WriteNullValue(); return; }
-			writer.WriteStartArray();
-			foreach (var item in array)
-			{
-				writer.WriteNumberValue(item);
-			}
-			writer.WriteEndArray();
+			writer.WriteNumberValue(item);
 		}
+		writer.WriteEndArray();
+	}
 
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
+	private static TArray Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
+	{
+		while (true)
 		{
-			while (true)
+			switch (Next(ref reader))
 			{
-				switch (Next(ref reader))
+				case JsonTokenType.Null:
 				{
-					case JsonTokenType.Null:
-					{
-						reader.Skip();
-						break;
-					}
-					case JsonTokenType.Number:
-					{
-						var item = reader.GetInt64();
-						array.Add(item);
-						break;
-					}
-					case JsonTokenType.EndArray:
-					{
-						return array;
-					}
-					default:
-					{
-						reader.Skip();
-						break;
-					}
+					reader.Skip();
+					break;
+				}
+				case JsonTokenType.Number:
+				{
+					var item = reader.GetInt64();
+					array.Add(item);
+					break;
+				}
+				case JsonTokenType.EndArray:
+				{
+					return array;
+				}
+				default:
+				{
+					reader.Skip();
+					break;
 				}
 			}
 		}
 	}
-	private static class InternalSerializer2
+	private static void Serialize2<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample>
 	{
-		public static void Serialize<TArray>(ref Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample>
+		if (array is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartArray();
+		foreach (var item in array)
 		{
-			if (array is null) { writer.WriteNullValue(); return; }
-			writer.WriteStartArray();
-			foreach (var item in array)
-			{
-				Subspace_Sample.Serialize(ref writer, item);
-			}
-			writer.WriteEndArray();
+			Serialize(writer, item);
 		}
+		writer.WriteEndArray();
+	}
 
-		public static TArray Deserialize<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static TArray Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
+	{
+		while (true)
 		{
-			while (true)
+			switch (Next(ref reader))
 			{
-				switch (Next(ref reader))
+				case JsonTokenType.Null:
 				{
-					case JsonTokenType.Null:
-					{
-						reader.Skip();
-						break;
-					}
-					case JsonTokenType.StartObject:
-					{
-						var item = Subspace_Sample.Deserialize(ref reader);
-						array.Add(item);
-						break;
-					}
-					case JsonTokenType.EndArray:
-					{
-						return array;
-					}
-					default:
-					{
-						reader.Skip();
-						break;
-					}
+					reader.Skip();
+					break;
+				}
+				case JsonTokenType.StartObject:
+				{
+					Deserialize(ref reader, out Subspace.Sample value);
+					var item = value;
+					array.Add(item);
+					break;
+				}
+				case JsonTokenType.EndArray:
+				{
+					return array;
+				}
+				default:
+				{
+					reader.Skip();
+					break;
 				}
 			}
 		}

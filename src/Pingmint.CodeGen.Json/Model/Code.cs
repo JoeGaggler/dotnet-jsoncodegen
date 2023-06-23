@@ -20,7 +20,6 @@ public class ObjectNode
     public String ClassName { get; set; }
     public String ClassFullName => (ClassNamespace is null) ? ClassName : $"{ClassNamespace}.{ClassName}";
     public String? ClassAccessModifier { get; set; }
-    public String SharedInstanceName { get; set; }
     public List<ObjectNodeProperty> Properties { get; set; }
     public ObjectNodeProperty WildcardProperty { get; set; }
     public Boolean IsInterface { get; set; }
@@ -36,7 +35,7 @@ public class ObjectNodeProperty
 
 public class ArrayNode
 {
-    public String ClassName { get; set; }
+    public String UniqueSuffix { get; set; }
     public String ItemTypeName { get; set; }
     public ISetter ItemSetter { get; set; }
     public NodeType Type { get; set; }
@@ -170,38 +169,41 @@ public class StringSetter : ISetter
 
 public class InternalSetter : ISetter
 {
-    private readonly String Serializer;
+    private readonly string type;
 
-    public InternalSetter(String serializer)
+    public InternalSetter(String type)
     {
-        this.Serializer = serializer;
+        this.type = type;
     }
 
     public String GetDeserializeExpression(String reader, String? target) =>
-        String.Format("{0}.Deserialize(ref {1})", this.Serializer, reader);
+        String.Format("GetOutParam<{1}>(ref {0}, Deserialize)", reader, type);
 
-    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
-        code.Line("{2} = {0}.Deserialize(ref {1});", this.Serializer, reader, target);
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target)
+    {
+        code.Line("Deserialize(ref {0}, out {1} value);", reader, type);
+        code.Line("{0} = value;", target);
+    }
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
-        code.Line("{0}.Serialize(ref {1}, {2});", this.Serializer, writer, value);
+        code.Line("Serialize({0}, {1});", writer, value);
 }
 
 public class InternalArraySetter : ISetter
 {
-    private readonly String Serializer;
+    private readonly String uniqueSuffix;
 
-    public InternalArraySetter(String serializer)
+    public InternalArraySetter(String uniqueSuffix)
     {
-        this.Serializer = serializer;
+        this.uniqueSuffix = uniqueSuffix;
     }
 
     public String GetDeserializeExpression(String reader, String? target) =>
-        String.Format("{0}.Deserialize(ref {1}, {2})", this.Serializer, reader, target);
+        String.Format("Deserialize{0}(ref {1}, {2})", this.uniqueSuffix, reader, target);
 
     public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target) =>
-        code.Line("{2} = {0}.Deserialize(ref {1}, {2});", this.Serializer, reader, target);
+        code.Line("{2} = Deserialize{0}(ref {1}, {2});", this.uniqueSuffix, reader, target);
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
-        code.Line("{0}.Serialize(ref {1}, {2});", this.Serializer, writer, value);
+        code.Line("Serialize{0}({1}, {2});", this.uniqueSuffix, writer, value);
 }
