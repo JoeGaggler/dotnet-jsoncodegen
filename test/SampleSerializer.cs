@@ -7,7 +7,7 @@ namespace Pingmint.CodeGen.Json.Test;
 
 public static partial class SampleSerializer
 {
-	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample value)
+	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartObject();
@@ -162,18 +162,19 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize0<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
+	private static void Serialize0<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool?>
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
 		foreach (var item in array)
 		{
-			writer.WriteBooleanValue(item);
+			if (item is not {} item2) { writer.WriteNullValue(); continue; }
+			writer.WriteBooleanValue(item2);
 		}
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+	private static TArray Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool?>
 	{
 		while (true)
 		{
@@ -199,18 +200,19 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize1<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64>
+	private static void Serialize1<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64?>
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
 		foreach (var item in array)
 		{
-			writer.WriteNumberValue(item);
+			if (item is not {} item2) { writer.WriteNullValue(); continue; }
+			writer.WriteNumberValue(item2);
 		}
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
+	private static TArray Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64?>
 	{
 		while (true)
 		{
@@ -241,18 +243,19 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize2<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static void Serialize2<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample?>
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
 		foreach (var item in array)
 		{
-			Serialize(writer, item);
+			if (item is not {} item2) { writer.WriteNullValue(); continue; }
+			Serialize(writer, item2);
 		}
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static TArray Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample?>
 	{
 		while (true)
 		{

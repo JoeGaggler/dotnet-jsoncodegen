@@ -10,9 +10,9 @@ namespace Pingmint.CodeGen.Json.Test
         {
             public Int64? Count { get; set; }
             public bool? IsTrue { get; set; }
-            public List<bool>? Bools { get; set; }
+            public List<bool?>? Bools { get; set; }
             public String? Name { get; set; }
-            public List<Int64>? Items { get; set; }
+            public List<Int64?>? Items { get; set; }
             public Int64? Id { get; set; }
             public Decimal? Percent { get; set; }
             public Sample? Recursion { get; set; }
@@ -28,6 +28,6 @@ namespace Pingmint.CodeGen.Json.Test
     {
         Int64? Count { get; set; }
         bool? IsTrue { get; set; }
-        List<bool>? Bools { get; set; }
+        List<bool?>? Bools { get; set; }
     }
 }

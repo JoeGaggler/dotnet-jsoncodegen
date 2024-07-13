@@ -508,7 +508,7 @@ internal static partial class Program
 
     private static void WriteObjectNode(CodeWriter code, Model.Code.ObjectNode node)
     {
-        using (code.Method("public static", "void", "Serialize", $"Utf8JsonWriter writer, {node.ClassFullName} value"))
+        using (code.Method("public static", "void", "Serialize", $"Utf8JsonWriter writer, {node.ClassFullName}? value"))
         {
             code.Line("if (value is null) { writer.WriteNullValue(); return; }");
             code.Line("writer.WriteStartObject();");
@@ -678,19 +678,20 @@ internal static partial class Program
         var uniqueSuffix = node.UniqueSuffix;
         var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        code.Line($"private static void Serialize{uniqueSuffix}<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+        code.Line($"private static void Serialize{uniqueSuffix}<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}?>");
         using (code.CreateBraceScope())
         {
             code.Line("if (array is null) { writer.WriteNullValue(); return; }");
             code.Line("writer.WriteStartArray();");
             using (code.ForEach("var item in array"))
             {
-                node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
+                code.Line("if (item is not {} item2) { writer.WriteNullValue(); continue; }");
+                node.ItemSetter.WriteSerializeStatement(code, "writer", "item2");
             }
             code.Line("writer.WriteEndArray();");
         }
         code.Line();
-        code.Line($"private static TArray Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+        code.Line($"private static TArray Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}?>");
         using (code.CreateBraceScope())
         {
             using (code.While("true"))
