@@ -7,8 +7,6 @@ namespace Pingmint.CodeGen.Json.Test;
 
 public static partial class SampleSerializer
 {
-	private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
-
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
@@ -73,7 +71,8 @@ public static partial class SampleSerializer
 	{
 		while (true)
 		{
-			switch (Next(ref reader))
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
 			{
 				case JsonTokenType.PropertyName:
 				{
@@ -143,7 +142,8 @@ public static partial class SampleSerializer
 					}
 					obj.Extensions ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
-					var rhs = Next(ref reader) switch
+					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+					var rhs = reader.TokenType switch
 					{
 						JsonTokenType.Null => null,
 						JsonTokenType.String => reader.GetString(),
@@ -179,7 +179,8 @@ public static partial class SampleSerializer
 	{
 		while (true)
 		{
-			switch (Next(ref reader))
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
 			{
 				case JsonTokenType.Null:
 				{
@@ -215,7 +216,8 @@ public static partial class SampleSerializer
 	{
 		while (true)
 		{
-			switch (Next(ref reader))
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
 			{
 				case JsonTokenType.Null:
 				{
@@ -256,7 +258,8 @@ public static partial class SampleSerializer
 	{
 		while (true)
 		{
-			switch (Next(ref reader))
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
 			{
 				case JsonTokenType.Null:
 				{

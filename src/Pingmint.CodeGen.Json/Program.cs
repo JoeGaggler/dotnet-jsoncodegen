@@ -491,9 +491,6 @@ internal static partial class Program
         var modifiers = root.AccessModifier is { } access ? $"{access} static" : "static";
         using (code.PartialClass(modifiers, root.ClassName))
         {
-            WriteHelpers(code);
-            code.Line();
-
             foreach (var node in root.Objects)
             {
                 if (node.IsInterface) { continue; }
@@ -543,7 +540,8 @@ internal static partial class Program
         {
             using (code.While("true"))
             {
-                using (code.Switch("Next(ref reader)"))
+                code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
+                using (code.Switch("reader.TokenType"))
                 {
                     if (node.Properties.Count > 0 || node.WildcardProperty is not null)
                     {
@@ -588,7 +586,8 @@ internal static partial class Program
 
         code.Line("obj.{0} ??= new();", prop.PropertyName);
         code.Line("var lhs = reader.GetString() ?? throw new NullReferenceException();");
-        code.Line("var rhs = Next(ref reader) switch", prop.PropertyName);
+        code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
+        code.Line("var rhs = reader.TokenType switch", prop.PropertyName);
         using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
         {
             code.Line("JsonTokenType.Null => null,");
@@ -685,7 +684,8 @@ internal static partial class Program
         {
             using (code.While("true"))
             {
-                using (code.Switch("Next(ref reader)"))
+                code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
+                using (code.Switch("reader.TokenType"))
                 {
 
                     using (code.SwitchCase("JsonTokenType.Null"))
@@ -736,11 +736,6 @@ internal static partial class Program
                 }
             }
         }
-    }
-
-    private static void WriteHelpers(CodeWriter code)
-    {
-        code.Line("private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
     }
 
     private static String GetShortTypeName(String fileNamespace, String typeName) => typeName.StartsWith(fileNamespace + ".") ? typeName.Substring(fileNamespace.Length + 1) : typeName;
