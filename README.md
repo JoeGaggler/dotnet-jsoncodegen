@@ -68,4 +68,3 @@ Person
 ```
 
 When a `Person` is deserialized, the `name` property will populate into the `Name` field, however any unspecified properties will instead populate `Data`, which is represented as a C# `Dictionary<String, T>` where `T` is the type indicated inside the braces.
-

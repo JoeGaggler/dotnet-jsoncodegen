@@ -143,12 +143,10 @@ public static partial class SampleSerializer
 					obj.Extensions ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
 					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
-					var rhs = reader.TokenType switch
-					{
-						JsonTokenType.Null => null,
-						JsonTokenType.String => reader.GetString(),
-						var unexpected => throw new InvalidOperationException($"unexpected token type for Extensions: {unexpected} ")
-					};
+					String? rhs;
+					if (reader.TokenType == JsonTokenType.Null) { rhs = default; }
+					if (reader.TokenType == JsonTokenType.String) { rhs = reader.GetString(); }
+					else throw new InvalidOperationException($"unexpected token type for Extensions: {reader.TokenType} ");
 					obj.Extensions.Add(lhs, rhs);
 					break;
 				}

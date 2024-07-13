@@ -30,7 +30,8 @@ public class ObjectNodeProperty
     public String Key { get; set; }
     public String PropertyName { get; set; }
     public NodeType Type { get; set; }
-    public ISetter ItemSetter { get; set; }
+    public String PropertyType { get; set; }
+    public ISetter ItemSetter { get; set; } //
 }
 
 public class ArrayNode

@@ -341,7 +341,7 @@ internal static partial class Program
                 classProps.Add(new()
                 {
                     Name = prop.Name,
-                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}?>" : prop.Type,
+                    Type = prop.IsArray ? $"List<{prop.Type}?>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}?>" : prop.Type,
                 });
 
                 if (prop.IsArray)
@@ -374,6 +374,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyType = prop.Type,
                     };
                     (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
                     codeNode.WildcardProperty = add;
@@ -587,24 +588,34 @@ internal static partial class Program
         code.Line("obj.{0} ??= new();", prop.PropertyName);
         code.Line("var lhs = reader.GetString() ?? throw new NullReferenceException();");
         code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
-        code.Line("var rhs = reader.TokenType switch", prop.PropertyName);
-        using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
+        code.Line("{0}? rhs;", prop.PropertyType);
+        code.Line("if (reader.TokenType == JsonTokenType.Null) {{ rhs = default; }}", prop.PropertyName);
+        switch (prop.Type)
         {
-            code.Line("JsonTokenType.Null => null,");
-            switch (prop.Type)
+            case Model.Code.NodeType.Object:
+                code.Line("if (reader.TokenType == JsonTokenType.StartObject) {{ rhs = new(); {1}; }}",
+                    prop.PropertyName,
+                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
+                break;
+            case Model.Code.NodeType.Array:
+                code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ rhs = {1}; }}",
+                    prop.PropertyName,
+                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                break;
+            case Model.Code.NodeType.Boolean:
             {
-                case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
-                case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
-                case Model.Code.NodeType.Boolean:
-                {
-                    code.Line("JsonTokenType.True => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
-                    code.Line("JsonTokenType.False => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
-                    break;
-                }
-                default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                code.Line("if (reader.TokenType == JsonTokenType.True) {{ rhs = true; }}", prop.PropertyName);
+                code.Line("if (reader.TokenType == JsonTokenType.False) {{ rhs = false; }}", prop.PropertyName);
+                break;
             }
-            code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
+            default:
+                code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ rhs = {1}; }}",
+                    prop.PropertyName,
+                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
+                    jsonTokenType);
+                break;
         }
+        code.Line("else throw new InvalidOperationException($\"unexpected token type for {0}: {{reader.TokenType}} \");", prop.PropertyName);
         code.Line("obj.{0}.Add(lhs, rhs);", prop.PropertyName);
         code.Line("break;");
     }
