@@ -56,12 +56,12 @@ public static partial class SampleSerializer
 			writer.WritePropertyName("percent");
 			writer.WriteNumberValue(localPercent);
 		}
-		if (value.Extensions is { } localExtensions)
+		if (value.Mapping is { } localMapping)
 		{
-			foreach (var (localExtensionsKey, localExtensionsValue) in localExtensions)
+			foreach (var (localMappingKey, localMappingValue) in localMapping)
 			{
-				writer.WritePropertyName(localExtensionsKey);
-				writer.WriteStringValue(localExtensionsValue);
+				writer.WritePropertyName(localMappingKey);
+				Serialize(writer, localMappingValue);
 			}
 		}
 		writer.WriteEndObject();
@@ -140,14 +140,14 @@ public static partial class SampleSerializer
 						if (reader.TokenType == JsonTokenType.Number) { obj.Percent = reader.GetDecimal(); break; }
 						throw new InvalidOperationException($"unexpected token type for Percent: {reader.TokenType} ");
 					}
-					obj.Extensions ??= new();
+					obj.Mapping ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
 					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
-					String? rhs;
+					Subspace.Sample? rhs;
 					if (reader.TokenType == JsonTokenType.Null) { rhs = default; }
-					if (reader.TokenType == JsonTokenType.String) { rhs = reader.GetString(); }
-					else throw new InvalidOperationException($"unexpected token type for Extensions: {reader.TokenType} ");
-					obj.Extensions.Add(lhs, rhs);
+					if (reader.TokenType == JsonTokenType.StartObject) { rhs = new(); Deserialize(ref reader, rhs); }
+					else throw new InvalidOperationException($"unexpected token type for Mapping: {reader.TokenType} ");
+					obj.Mapping.Add(lhs, rhs);
 					break;
 				}
 				case JsonTokenType.EndObject:

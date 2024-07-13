@@ -4,7 +4,7 @@ Subspace.Sample : ICount, IName
 - recursion => Recursion : Subspace.Sample
 - items2 => Items2 : [Subspace.Sample]
 - percent => Percent : Decimal
-- * => Extensions : {String}
+- * => Mapping : {Subspace.Sample}
 
 // Comment test
 : IName

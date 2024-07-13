@@ -595,12 +595,12 @@ internal static partial class Program
             case Model.Code.NodeType.Object:
                 code.Line("if (reader.TokenType == JsonTokenType.StartObject) {{ rhs = new(); {1}; }}",
                     prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
+                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
                 break;
             case Model.Code.NodeType.Array:
                 code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ rhs = {1}; }}",
                     prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
                 break;
             case Model.Code.NodeType.Boolean:
             {
@@ -611,7 +611,7 @@ internal static partial class Program
             default:
                 code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ rhs = {1}; }}",
                     prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
+                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"),
                     jsonTokenType);
                 break;
         }

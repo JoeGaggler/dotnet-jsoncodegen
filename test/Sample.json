@@ -4,16 +4,24 @@
         2,
         4
     ],
-    "string1": "value1",
-    "string2": "value2",
-    "string3": "value3",
+    "mapping1": {
+        "id": 3
+    },
+    "mapping2": {
+        "id": 4
+    },
     "name": "hi",
     "id": 1,
     "recursion": {
         "id": 2,
         "name": "two"
     },
-    "isTrue" : false,
-    "bools" : [true, false, false, true],
-    "percent" : 0.13
+    "isTrue": false,
+    "bools": [
+        true,
+        false,
+        false,
+        true
+    ],
+    "percent": 0.13
 }
