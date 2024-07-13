@@ -60,7 +60,7 @@
                 "run",
                 "--",
                 "--input",
-                "../../test/Sample.txt",
+                "../../test/SampleSerializer.txt",
                 "--output",
                 "../../test/SampleSerializer.cs",
                 "--class",

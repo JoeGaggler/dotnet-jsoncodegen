@@ -341,7 +341,7 @@ internal static partial class Program
                 classProps.Add(new()
                 {
                     Name = prop.Name,
-                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}>" : prop.Type,
+                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}?>" : prop.Type,
                 });
 
                 if (prop.IsArray)
@@ -539,9 +539,8 @@ internal static partial class Program
             code.Line("writer.WriteEndObject();");
         }
         code.Line();
-        using (code.Method("public static", "void", "Deserialize", $"ref Utf8JsonReader reader, out {node.ClassFullName} obj"))
+        using (code.Method("public static", "void", "Deserialize", $"ref Utf8JsonReader reader, {node.ClassFullName} obj"))
         {
-            code.Line("obj = new {0}();", node.ClassFullName);
             using (code.While("true"))
             {
                 using (code.Switch("Next(ref reader)"))
@@ -621,25 +620,36 @@ internal static partial class Program
             var reader = "reader";
             var jsonTokenType = GetTokenTypeFromPropertyType(prop.Type);
 
-            code.Line("obj.{0} = Next(ref reader) switch", prop.PropertyName);
-            using (code.CreateBraceScope(preamble: null, withClosingBrace: ";"))
+            code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
+            code.Line("if (reader.TokenType == JsonTokenType.Null) {{ obj.{0} = null; break; }}", prop.PropertyName);
             {
-                code.Line("JsonTokenType.Null => null,");
                 switch (prop.Type)
                 {
-                    case Model.Code.NodeType.Object: code.Line("JsonTokenType.StartObject => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
-                    case Model.Code.NodeType.Array: code.Line("JsonTokenType.StartArray => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()")); break;
+                    case Model.Code.NodeType.Object:
+                        code.Line("if (reader.TokenType == JsonTokenType.StartObject) {{ obj.{0} = new(); {1}; break; }}",
+                            prop.PropertyName,
+                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
+                        break;
+                    case Model.Code.NodeType.Array:
+                        code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ obj.{0} = {1}; break; }}",
+                            prop.PropertyName,
+                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        break;
                     case Model.Code.NodeType.Boolean:
                     {
-                        code.Line("JsonTokenType.True => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
-                        code.Line("JsonTokenType.False => {0},", prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        code.Line("if (reader.TokenType == JsonTokenType.True) {{ obj.{0} = true; break; }}", prop.PropertyName);
+                        code.Line("if (reader.TokenType == JsonTokenType.False) {{ obj.{0} = false; break; }}", prop.PropertyName);
                         break;
                     }
-                    default: code.Line("JsonTokenType.{0} => {1},", jsonTokenType, prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}")); break;
+                    default:
+                        code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ obj.{0} = {1}; break; }}",
+                            prop.PropertyName,
+                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
+                            jsonTokenType);
+                        break;
                 }
-                code.Line("var unexpected => throw new InvalidOperationException($\"unexpected token type for {0}: {{unexpected}} \")", prop.PropertyName);
+                code.Line("throw new InvalidOperationException($\"unexpected token type for {0}: {{reader.TokenType}} \");", prop.PropertyName);
             }
-            code.Line("break;");
         }
     }
 
@@ -701,7 +711,8 @@ internal static partial class Program
                             var jsonTokenType = GetTokenTypeFromPropertyType(node.Type);
                             using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
                             {
-                                node.ItemSetter.WriteDeserializeStatement(code, reader, "var item");
+                                code.Line("{0} item;", internalSerializerItemType);
+                                node.ItemSetter.WriteDeserializeStatement(code, reader, "item");
                                 code.Line("array.Add({0});", "item");
                                 code.Line("break;");
                             }
@@ -730,11 +741,6 @@ internal static partial class Program
     private static void WriteHelpers(CodeWriter code)
     {
         code.Line("private static JsonTokenType Next(ref Utf8JsonReader reader) => reader.Read() ? reader.TokenType : throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
-        code.Line();
-
-        // HACK: this code allows us to call a method with an out-parameter inside of a switch expression
-        code.Line("private delegate void DeserializerDelegate<T>(ref Utf8JsonReader r, out T value);");
-        code.Line("private static T GetOutParam<T>(ref Utf8JsonReader reader, DeserializerDelegate<T> func) { func(ref reader, out T value); return value; }");
     }
 
     private static String GetShortTypeName(String fileNamespace, String typeName) => typeName.StartsWith(fileNamespace + ".") ? typeName.Substring(fileNamespace.Length + 1) : typeName;

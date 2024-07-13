@@ -18,7 +18,8 @@ public class SampleTests
 
         var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
         Assert.IsTrue(reader.Read());
-        SampleSerializer.Deserialize(ref reader, out var model);
+        Subspace.Sample model = new();
+        SampleSerializer.Deserialize(ref reader, model);
 
         Assert.That(model.Name, Is.EqualTo("hi"));
 

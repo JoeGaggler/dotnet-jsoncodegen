@@ -177,12 +177,12 @@ public class InternalSetter : ISetter
     }
 
     public String GetDeserializeExpression(String reader, String? target) =>
-        String.Format("GetOutParam<{1}>(ref {0}, Deserialize)", reader, type);
+        String.Format("Deserialize(ref {0}, {1})", reader, target);
 
     public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String? target)
     {
-        code.Line("Deserialize(ref {0}, out {1} value);", reader, type);
-        code.Line("{0} = value;", target);
+        code.Line("{0} = new();", target);
+        code.Line("Deserialize(ref {0}, {1});", reader, target);
     }
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
