@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-public static partial class SampleSerializer
+public partial class SampleSerializer
 {
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{

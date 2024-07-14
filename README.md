@@ -4,7 +4,7 @@ A dotnet tool that generates code that can serialize JSON as described by a simp
 
 ## Overview
 
-There are [several](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview?pivots=dotnet-7-0) ways to read and write JSON in dotnet. This tool leverages the benefits of `Utf8JsonReader` and `Utf8JsonWriter`, producing a C# file that you can use as-is, edit manually, or extend via a `partial` implementation.
+There are [several](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/overview) ways to read and write JSON in dotnet. This tool leverages the benefits of `Utf8JsonReader` and `Utf8JsonWriter`, producing a C# file that you can use as-is, edit manually, or extend via a `partial` implementation. The generated code does not perform any reflection, and essentially uses the "[fast path](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/reflection-vs-source-generation?pivots=dotnet-8-0#source-generation)" for both serialization [and deserialization](https://github.com/dotnet/runtime/issues/55043).
 
 ## Getting Started
 
