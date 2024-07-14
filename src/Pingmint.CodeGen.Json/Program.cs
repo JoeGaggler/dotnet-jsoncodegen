@@ -341,7 +341,7 @@ internal static partial class Program
                 classProps.Add(new()
                 {
                     Name = prop.Name,
-                    Type = prop.IsArray ? $"List<{prop.Type}?>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}?>" : prop.Type,
+                    Type = prop.IsArray ? $"List<{prop.Type}>" : prop.IsDictionary ? $"Dictionary<String, {prop.Type}>" : prop.Type,
                 });
 
                 if (prop.IsArray)
@@ -678,20 +678,19 @@ internal static partial class Program
         var uniqueSuffix = node.UniqueSuffix;
         var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        code.Line($"private static void Serialize{uniqueSuffix}<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}?>");
+        code.Line($"private static void Serialize{uniqueSuffix}<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
         using (code.CreateBraceScope())
         {
             code.Line("if (array is null) { writer.WriteNullValue(); return; }");
             code.Line("writer.WriteStartArray();");
             using (code.ForEach("var item in array"))
             {
-                code.Line("if (item is not {} item2) { writer.WriteNullValue(); continue; }");
-                node.ItemSetter.WriteSerializeStatement(code, "writer", "item2");
+                node.ItemSetter.WriteSerializeStatement(code, "writer", "item");
             }
             code.Line("writer.WriteEndArray();");
         }
         code.Line();
-        code.Line($"private static TArray Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}?>");
+        code.Line($"private static TArray Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
         using (code.CreateBraceScope())
         {
             using (code.While("true"))
