@@ -10,6 +10,7 @@
     "mapping2": {
         "id": 4
     },
+    "mapping3": null,
     "name": "hi",
     "id": 1,
     "recursion": {

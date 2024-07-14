@@ -68,3 +68,27 @@ Person
 ```
 
 When a `Person` is deserialized, the `name` property will populate into the `Name` field, however any unspecified properties will instead populate `Data`, which is represented as a C# `Dictionary<String, T>` where `T` is the type indicated inside the braces.
+
+## Notes
+
+### Null values
+
+This tools considers `null` values as equivalent to absent values. This is technically incorrect JSON behavior, but I currently have no practical use case for an explicit `null` value. I may encounter an API that considers an absent value as an intent to leave the existing value as-is vs nulling it out -- in that case I would update this tool for my needs.
+
+The benefit of this decision is that the consuming code much simpler.
+
+One less-obvious side-effect of this decision is that deserialization will omit `null` values from collections, misrepresenting the collection size:
+
+```json
+{
+    "items": [
+        null,
+        { "name": "alpha" },
+        null,
+        { "name": "beta" },
+        null
+    ]
+}
+```
+
+The resulting C# object will have an `items` collection property with only two elements instead of five.

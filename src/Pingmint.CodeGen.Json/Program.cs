@@ -588,32 +588,38 @@ internal static partial class Program
         code.Line("obj.{0} ??= new();", prop.PropertyName);
         code.Line("var lhs = reader.GetString() ?? throw new NullReferenceException();");
         code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
-        code.Line("{0}? rhs;", prop.PropertyType);
-        code.Line("if (reader.TokenType == JsonTokenType.Null) {{ rhs = default; }}", prop.PropertyName);
+        code.Line("{0} rhs;", prop.PropertyType);
+        code.Line("if (reader.TokenType == JsonTokenType.Null) {{ break; }}", prop.PropertyName);
         switch (prop.Type)
         {
             case Model.Code.NodeType.Object:
-                code.Line("if (reader.TokenType == JsonTokenType.StartObject) {{ rhs = new(); {1}; }}",
-                    prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
+            {
+                code.Line("else if (reader.TokenType == JsonTokenType.StartObject) {{ rhs = new(); {1}; }}",
+                prop.PropertyName,
+                prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
                 break;
+            }
             case Model.Code.NodeType.Array:
-                code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ rhs = {1}; }}",
-                    prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
+            {
+                code.Line("else if (reader.TokenType == JsonTokenType.StartArray) {{ rhs = {1}; }}",
+                prop.PropertyName,
+                prop.ItemSetter.GetDeserializeExpression(reader, "rhs"));
                 break;
+            }
             case Model.Code.NodeType.Boolean:
             {
-                code.Line("if (reader.TokenType == JsonTokenType.True) {{ rhs = true; }}", prop.PropertyName);
-                code.Line("if (reader.TokenType == JsonTokenType.False) {{ rhs = false; }}", prop.PropertyName);
+                code.Line("else if (reader.TokenType == JsonTokenType.True) {{ rhs = true; }}", prop.PropertyName);
+                code.Line("else if (reader.TokenType == JsonTokenType.False) {{ rhs = false; }}", prop.PropertyName);
                 break;
             }
             default:
-                code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ rhs = {1}; }}",
-                    prop.PropertyName,
-                    prop.ItemSetter.GetDeserializeExpression(reader, "rhs"),
-                    jsonTokenType);
+            {
+                code.Line("else if (reader.TokenType == JsonTokenType.{2}) {{ rhs = {1}; }}",
+                prop.PropertyName,
+                prop.ItemSetter.GetDeserializeExpression(reader, "rhs"),
+                jsonTokenType);
                 break;
+            }
         }
         code.Line("else throw new InvalidOperationException($\"unexpected token type for {0}: {{reader.TokenType}} \");", prop.PropertyName);
         code.Line("obj.{0}.Add(lhs, rhs);", prop.PropertyName);
@@ -636,15 +642,19 @@ internal static partial class Program
                 switch (prop.Type)
                 {
                     case Model.Code.NodeType.Object:
+                    {
                         code.Line("if (reader.TokenType == JsonTokenType.StartObject) {{ obj.{0} = new(); {1}; break; }}",
-                            prop.PropertyName,
-                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
+                        prop.PropertyName,
+                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
                         break;
+                    }
                     case Model.Code.NodeType.Array:
+                    {
                         code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ obj.{0} = {1}; break; }}",
-                            prop.PropertyName,
-                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        prop.PropertyName,
+                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
                         break;
+                    }
                     case Model.Code.NodeType.Boolean:
                     {
                         code.Line("if (reader.TokenType == JsonTokenType.True) {{ obj.{0} = true; break; }}", prop.PropertyName);
@@ -652,11 +662,13 @@ internal static partial class Program
                         break;
                     }
                     default:
+                    {
                         code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ obj.{0} = {1}; break; }}",
-                            prop.PropertyName,
-                            prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
-                            jsonTokenType);
+                        prop.PropertyName,
+                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
+                        jsonTokenType);
                         break;
+                    }
                 }
                 code.Line("throw new InvalidOperationException($\"unexpected token type for {0}: {{reader.TokenType}} \");", prop.PropertyName);
             }
@@ -698,13 +710,7 @@ internal static partial class Program
                 code.Line("if (!reader.Read()) throw new InvalidOperationException(\"Unable to read next token from Utf8JsonReader\");");
                 using (code.Switch("reader.TokenType"))
                 {
-
-                    using (code.SwitchCase("JsonTokenType.Null"))
-                    {
-                        // TODO: handle case where JSON token is null, but C# item is not nullable
-                        code.Line("reader.Skip();");
-                        code.Line("break;");
-                    }
+                    code.Line("case JsonTokenType.Null: { reader.Skip(); break; }");
 
                     switch (node.Type)
                     {

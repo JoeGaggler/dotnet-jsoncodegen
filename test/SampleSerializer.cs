@@ -143,9 +143,9 @@ public static partial class SampleSerializer
 					obj.Mapping ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
 					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
-					Subspace.Sample? rhs;
-					if (reader.TokenType == JsonTokenType.Null) { rhs = default; }
-					if (reader.TokenType == JsonTokenType.StartObject) { rhs = new(); Deserialize(ref reader, rhs); }
+					Subspace.Sample rhs;
+					if (reader.TokenType == JsonTokenType.Null) { break; }
+					else if (reader.TokenType == JsonTokenType.StartObject) { rhs = new(); Deserialize(ref reader, rhs); }
 					else throw new InvalidOperationException($"unexpected token type for Mapping: {reader.TokenType} ");
 					obj.Mapping.Add(lhs, rhs);
 					break;
@@ -180,11 +180,7 @@ public static partial class SampleSerializer
 			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 			switch (reader.TokenType)
 			{
-				case JsonTokenType.Null:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.True: array.Add(true); break;
 				case JsonTokenType.False: array.Add(false); break;
 				case JsonTokenType.EndArray:
@@ -217,11 +213,7 @@ public static partial class SampleSerializer
 			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 			switch (reader.TokenType)
 			{
-				case JsonTokenType.Null:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.Number:
 				{
 					Int64 item;
@@ -259,11 +251,7 @@ public static partial class SampleSerializer
 			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 			switch (reader.TokenType)
 			{
-				case JsonTokenType.Null:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.StartObject:
 				{
 					Subspace.Sample item;
