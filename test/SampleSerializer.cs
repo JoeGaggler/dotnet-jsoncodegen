@@ -5,8 +5,15 @@ using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-public partial class SampleSerializer
+public partial class SampleSerializer :
+    SampleSerializer.ISerializes<Subspace.Sample>
 {
+	public interface ISerializes<T> where T : notnull
+	{
+		static abstract void Serialize(Utf8JsonWriter writer, T? value);
+		static abstract void Deserialize(ref Utf8JsonReader writer, T value);
+	}
+
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
