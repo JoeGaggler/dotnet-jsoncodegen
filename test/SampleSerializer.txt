@@ -5,6 +5,7 @@ Subspace.Sample : ICount, IName
 - items2 => Items2 : [Subspace.Sample]
 - percent => Percent : Decimal
 - meta => Meta : Subspace.Meta
+- metaList => MetaList : [Subspace.Meta]
 - * => Mapping : {Subspace.Sample}
 
 Subspace.Meta

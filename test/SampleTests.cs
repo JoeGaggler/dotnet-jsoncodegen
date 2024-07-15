@@ -23,6 +23,7 @@ public class SampleTests
 
         Assert.That(model.Name, Is.EqualTo("hi"));
         Assert.That(model.Meta.Status, Is.EqualTo("active"));
+        Assert.That(model.MetaList.Count, Is.EqualTo(2));
 
         String outJson;
         using (var mem = new MemoryStream())

@@ -18,6 +18,14 @@
         "ignore_me": "ignored",
         "status": "active"
     },
+    "metaList": [
+        {
+            "status": "active"
+        },
+        {
+            "status": "inactive"
+        }
+    ],
     "recursion": {
         "id": 2,
         "name": "two"

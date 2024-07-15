@@ -69,6 +69,11 @@ public partial class SampleSerializer :
 			writer.WritePropertyName("meta");
 			Serialize(writer, localMeta);
 		}
+		if (value.MetaList is { } localMetaList)
+		{
+			writer.WritePropertyName("metaList");
+			Serialize3(writer, localMetaList);
+		}
 		if (value.Mapping is { } localMapping)
 		{
 			foreach (var (localMappingKey, localMappingValue) in localMapping)
@@ -159,6 +164,13 @@ public partial class SampleSerializer :
 						if (reader.TokenType == JsonTokenType.Null) { obj.Meta = null; break; }
 						if (reader.TokenType == JsonTokenType.StartObject) { obj.Meta = new(); Deserialize(ref reader, obj.Meta); break; }
 						throw new InvalidOperationException($"unexpected token type for Meta: {reader.TokenType} ");
+					}
+					else if (reader.ValueTextEquals("metaList"))
+					{
+						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+						if (reader.TokenType == JsonTokenType.Null) { obj.MetaList = null; break; }
+						if (reader.TokenType == JsonTokenType.StartArray) { obj.MetaList = Deserialize3(ref reader, obj.MetaList ?? new()); break; }
+						throw new InvalidOperationException($"unexpected token type for MetaList: {reader.TokenType} ");
 					}
 					obj.Mapping ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
@@ -260,8 +272,7 @@ public partial class SampleSerializer :
 				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.Number:
 				{
-					Int64 item;
-					item = reader.GetInt64();
+					var item = reader.GetInt64();
 					array.Add(item);
 					break;
 				}
@@ -291,8 +302,38 @@ public partial class SampleSerializer :
 				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.StartObject:
 				{
-					Subspace.Sample item;
-					item = new();
+					Subspace.Sample item = new();
+					Deserialize(ref reader, item);
+					array.Add(item);
+					break;
+				}
+				case JsonTokenType.EndArray: { return array; }
+				default: { reader.Skip(); break; }
+			}
+		}
+	}
+	private static void Serialize3<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Meta>
+	{
+		if (array is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartArray();
+		foreach (var item in array)
+		{
+			Serialize(writer, item);
+		}
+		writer.WriteEndArray();
+	}
+
+	private static TArray Deserialize3<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Meta>
+	{
+		while (true)
+		{
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
+			{
+				case JsonTokenType.Null: { reader.Skip(); break; }
+				case JsonTokenType.StartObject:
+				{
+					Subspace.Meta item = new();
 					Deserialize(ref reader, item);
 					array.Add(item);
 					break;

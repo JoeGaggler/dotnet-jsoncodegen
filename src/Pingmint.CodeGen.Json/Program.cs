@@ -742,8 +742,7 @@ internal static partial class Program
                             var jsonTokenType = GetTokenTypeFromPropertyType(node.Type);
                             using (code.SwitchCase("JsonTokenType.{0}", jsonTokenType))
                             {
-                                code.Line("{0} item;", internalSerializerItemType);
-                                node.ItemSetter.WriteDeserializeStatement(code, reader, "item");
+                                node.ItemSetter.WriteDeserializeStatement(code, reader, internalSerializerItemType, "item");
                                 code.Line("array.Add({0});", "item");
                                 code.Line("break;");
                             }
