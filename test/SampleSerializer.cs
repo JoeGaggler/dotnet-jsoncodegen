@@ -170,15 +170,8 @@ public partial class SampleSerializer :
 					obj.Mapping.Add(lhs, rhs);
 					break;
 				}
-				case JsonTokenType.EndObject:
-				{
-					return;
-				}
-				default:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.EndObject: { return; }
+				default: { reader.Skip(); break; }
 			}
 		}
 	}
@@ -215,15 +208,8 @@ public partial class SampleSerializer :
 					reader.Skip();
 					break;
 				}
-				case JsonTokenType.EndObject:
-				{
-					return;
-				}
-				default:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.EndObject: { return; }
+				default: { reader.Skip(); break; }
 			}
 		}
 	}
@@ -246,17 +232,10 @@ public partial class SampleSerializer :
 			switch (reader.TokenType)
 			{
 				case JsonTokenType.Null: { reader.Skip(); break; }
-				case JsonTokenType.True: array.Add(true); break;
-				case JsonTokenType.False: array.Add(false); break;
-				case JsonTokenType.EndArray:
-				{
-					return array;
-				}
-				default:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.True: { array.Add(true); break; }
+				case JsonTokenType.False: { array.Add(false); break; }
+				case JsonTokenType.EndArray: { return array; }
+				default: { reader.Skip(); break; }
 			}
 		}
 	}
@@ -286,15 +265,8 @@ public partial class SampleSerializer :
 					array.Add(item);
 					break;
 				}
-				case JsonTokenType.EndArray:
-				{
-					return array;
-				}
-				default:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.EndArray: { return array; }
+				default: { reader.Skip(); break; }
 			}
 		}
 	}
@@ -325,15 +297,8 @@ public partial class SampleSerializer :
 					array.Add(item);
 					break;
 				}
-				case JsonTokenType.EndArray:
-				{
-					return array;
-				}
-				default:
-				{
-					reader.Skip();
-					break;
-				}
+				case JsonTokenType.EndArray: { return array; }
+				default: { reader.Skip(); break; }
 			}
 		}
 	}

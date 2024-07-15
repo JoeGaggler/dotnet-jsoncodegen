@@ -587,15 +587,8 @@ internal static partial class Program
                             }
                         }
                     }
-                    using (code.SwitchCase("JsonTokenType.EndObject"))
-                    {
-                        code.Line("return;");
-                    }
-                    using (code.SwitchDefault())
-                    {
-                        code.Line("reader.Skip();");
-                        code.Line("break;");
-                    }
+                    code.Line("case JsonTokenType.EndObject: { return; }");
+                    code.Line("default: { reader.Skip(); break; }");
                 }
             }
         }
@@ -737,8 +730,8 @@ internal static partial class Program
                     {
                         case Model.Code.NodeType.Boolean:
                         {
-                            code.Line($"case JsonTokenType.True: array.Add(true); break;");
-                            code.Line($"case JsonTokenType.False: array.Add(false); break;");
+                            code.Line("case JsonTokenType.True: { array.Add(true); break; }");
+                            code.Line("case JsonTokenType.False: { array.Add(false); break; }");
                             break;
                         }
                         case Model.Code.NodeType.String:
@@ -762,15 +755,8 @@ internal static partial class Program
                         }
                     }
 
-                    using (code.SwitchCase("JsonTokenType.EndArray"))
-                    {
-                        code.Line("return array;");
-                    }
-                    using (code.SwitchDefault())
-                    {
-                        code.Line("reader.Skip();");
-                        code.Line("break;");
-                    }
+                    code.Line("case JsonTokenType.EndArray: { return array; }");
+                    code.Line("default: { reader.Skip(); break; }");
                 }
             }
         }
