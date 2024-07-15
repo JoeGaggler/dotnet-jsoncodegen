@@ -22,6 +22,7 @@ public class SampleTests
         SampleSerializer.Deserialize(ref reader, model);
 
         Assert.That(model.Name, Is.EqualTo("hi"));
+        Assert.That(model.Meta.Status, Is.EqualTo("active"));
 
         String outJson;
         using (var mem = new MemoryStream())

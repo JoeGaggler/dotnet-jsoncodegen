@@ -16,8 +16,12 @@ namespace Pingmint.CodeGen.Json.Test
             public Int64? Id { get; set; }
             public Decimal? Percent { get; set; }
             public Sample? Recursion { get; set; }
+            public Meta? Meta { get; set; }
             public List<Sample>? Items2 { get; set; }
             public Dictionary<String, Sample>? Mapping { get; set; }
+        }
+        public sealed partial class Meta {
+            public String? Status { get; set; }
         }
     }
     public partial interface IName

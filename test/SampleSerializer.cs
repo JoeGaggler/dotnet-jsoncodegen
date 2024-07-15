@@ -6,7 +6,8 @@ using System.Text.Json;
 namespace Pingmint.CodeGen.Json.Test;
 
 public partial class SampleSerializer :
-    SampleSerializer.ISerializes<Subspace.Sample>
+    SampleSerializer.ISerializes<Subspace.Sample>,
+    SampleSerializer.ISerializes<Subspace.Meta>
 {
 	public interface ISerializes<T> where T : notnull
 	{
@@ -62,6 +63,11 @@ public partial class SampleSerializer :
 		{
 			writer.WritePropertyName("percent");
 			writer.WriteNumberValue(localPercent);
+		}
+		if (value.Meta is { } localMeta)
+		{
+			writer.WritePropertyName("meta");
+			Serialize(writer, localMeta);
 		}
 		if (value.Mapping is { } localMapping)
 		{
@@ -147,6 +153,13 @@ public partial class SampleSerializer :
 						if (reader.TokenType == JsonTokenType.Number) { obj.Percent = reader.GetDecimal(); break; }
 						throw new InvalidOperationException($"unexpected token type for Percent: {reader.TokenType} ");
 					}
+					else if (reader.ValueTextEquals("meta"))
+					{
+						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+						if (reader.TokenType == JsonTokenType.Null) { obj.Meta = null; break; }
+						if (reader.TokenType == JsonTokenType.StartObject) { obj.Meta = new(); Deserialize(ref reader, obj.Meta); break; }
+						throw new InvalidOperationException($"unexpected token type for Meta: {reader.TokenType} ");
+					}
 					obj.Mapping ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
 					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
@@ -155,6 +168,51 @@ public partial class SampleSerializer :
 					else if (reader.TokenType == JsonTokenType.StartObject) { rhs = new(); Deserialize(ref reader, rhs); }
 					else throw new InvalidOperationException($"unexpected token type for Mapping: {reader.TokenType} ");
 					obj.Mapping.Add(lhs, rhs);
+					break;
+				}
+				case JsonTokenType.EndObject:
+				{
+					return;
+				}
+				default:
+				{
+					reader.Skip();
+					break;
+				}
+			}
+		}
+	}
+	public static void Serialize(Utf8JsonWriter writer, Subspace.Meta? value)
+	{
+		if (value is null) { writer.WriteNullValue(); return; }
+		writer.WriteStartObject();
+		if (value.Status is { } localStatus)
+		{
+			writer.WritePropertyName("status");
+			writer.WriteStringValue(localStatus);
+		}
+		writer.WriteEndObject();
+	}
+
+	public static void Deserialize(ref Utf8JsonReader reader, Subspace.Meta obj)
+	{
+		while (true)
+		{
+			if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+			switch (reader.TokenType)
+			{
+				case JsonTokenType.PropertyName:
+				{
+					if (reader.ValueTextEquals("status"))
+					{
+						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
+						if (reader.TokenType == JsonTokenType.Null) { obj.Status = null; break; }
+						if (reader.TokenType == JsonTokenType.String) { obj.Status = reader.GetString(); break; }
+						throw new InvalidOperationException($"unexpected token type for Status: {reader.TokenType} ");
+					}
+
+					reader.Skip();
+					reader.Skip();
 					break;
 				}
 				case JsonTokenType.EndObject:

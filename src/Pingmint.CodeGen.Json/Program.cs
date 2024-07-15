@@ -581,7 +581,8 @@ internal static partial class Program
                             else
                             {
                                 code.Line();
-                                code.Line("reader.Skip();");
+                                code.Line("reader.Skip();"); // move to property value
+                                code.Line("reader.Skip();"); // skip property value
                                 code.Line("break;");
                             }
                         }
