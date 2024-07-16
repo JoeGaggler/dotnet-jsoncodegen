@@ -508,7 +508,7 @@ internal static partial class Program
             using (code.CreateBraceScope())
             {
                 code.Line("static abstract void Serialize(Utf8JsonWriter writer, T? value);");
-                code.Line("static abstract void Deserialize(ref Utf8JsonReader writer, T value);");
+                code.Line("static abstract void Deserialize(ref Utf8JsonReader reader, T value);");
             }
             code.Line();
 

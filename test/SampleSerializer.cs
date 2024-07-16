@@ -12,7 +12,7 @@ public partial class SampleSerializer :
 	public interface ISerializes<T> where T : notnull
 	{
 		static abstract void Serialize(Utf8JsonWriter writer, T? value);
-		static abstract void Deserialize(ref Utf8JsonReader writer, T value);
+		static abstract void Deserialize(ref Utf8JsonReader reader, T value);
 	}
 
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
