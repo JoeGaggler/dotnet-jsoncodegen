@@ -743,6 +743,15 @@ internal static partial class Program
                             break;
                         }
                         case Model.Code.NodeType.String:
+                        {
+                            using (code.SwitchCase("JsonTokenType.String"))
+                            {
+                                node.ItemSetter.WriteDeserializeStatement(code, reader, internalSerializerItemType, "item");
+                                code.Line("array.Add({0}!);", "item"); // null-forgiving is ok because we know it's a string
+                                code.Line("break;");
+                            }
+                            break;
+                        }
                         case Model.Code.NodeType.Number:
                         case Model.Code.NodeType.Object:
                         case var other when node.ItemSetter is not null:
