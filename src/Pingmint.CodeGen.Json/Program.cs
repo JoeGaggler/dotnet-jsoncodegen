@@ -1,4 +1,4 @@
-﻿using Pingmint.CodeGen.CSharp;
+using Pingmint.CodeGen.CSharp;
 using static System.Console;
 
 namespace Pingmint.CodeGen.Json;
@@ -673,6 +673,14 @@ internal static partial class Program
                     {
                         code.Line("if (reader.TokenType == JsonTokenType.True) {{ obj.{0} = true; break; }}", prop.PropertyName);
                         code.Line("if (reader.TokenType == JsonTokenType.False) {{ obj.{0} = false; break; }}", prop.PropertyName);
+                        break;
+                    }
+                    case Model.Code.NodeType.String:
+                    {
+                        code.Line("if (reader.TokenType == JsonTokenType.{2}) {{ obj.{0} = {1}!; break; }}", // null-forgiving is ok because we know it's a string
+                        prop.PropertyName,
+                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"),
+                        jsonTokenType);
                         break;
                     }
                     default:
