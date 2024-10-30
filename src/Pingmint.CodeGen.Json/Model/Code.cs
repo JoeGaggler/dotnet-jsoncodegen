@@ -92,6 +92,19 @@ public class Int64Setter : ISetter
         code.Line("{0}.WriteNumberValue({1});", writer, value);
 }
 
+public class UInt64Setter : ISetter
+{
+    public static readonly UInt64Setter Instance = new();
+    public String GetDeserializeExpression(String reader, String? target) =>
+        $"{reader}.GetUInt64()";
+
+    public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String type, String target) =>
+        code.Line($"var {target} = {reader}.GetUInt64();");
+
+    public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
+        code.Line("{0}.WriteNumberValue({1});", writer, value);
+}
+
 public class DecimalSetter : ISetter
 {
     public static readonly DecimalSetter Instance = new();

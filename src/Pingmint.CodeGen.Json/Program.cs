@@ -292,6 +292,13 @@ internal static partial class Program
                         itemType = Model.Code.NodeType.Number;
                         break;
                     }
+                    case "ulong":
+                    case "UInt64":
+                    {
+                        itemSetter = Model.Code.UInt64Setter.Instance;
+                        itemType = Model.Code.NodeType.Number;
+                        break;
+                    }
                     case "decimal":
                     case "Decimal":
                     {
