@@ -358,6 +358,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyType = prop.Type,
                         Type = Model.Code.NodeType.Array,
                         ItemSetter = new Model.Code.InternalArraySetter(uniqueSuffix),
                     });
@@ -392,6 +393,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyType = prop.Type,
                     };
                     (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
                     props.Add(add);
