@@ -516,8 +516,9 @@ internal static partial class Program
             code.Line($"""public interface ISerializes<T> where T : notnull""");
             using (code.CreateBraceScope())
             {
-                code.Line("static abstract void Serialize(Utf8JsonWriter writer, T? value);");
-                code.Line("static abstract void Deserialize(ref Utf8JsonReader reader, T value);");
+                // HACK: temporarily disabled for netstandard2.0 support.
+                // code.Line("static abstract void Serialize(Utf8JsonWriter writer, T? value);");
+                // code.Line("static abstract void Deserialize(ref Utf8JsonReader reader, T value);");
             }
             code.Line();
 
