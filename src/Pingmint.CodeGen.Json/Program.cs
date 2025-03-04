@@ -500,28 +500,9 @@ internal static partial class Program
     {
         var modifiers = root.AccessModifier is { } access ? $"{access} partial" : "partial";
         code.StartLine();
-        code.Text("{0} class {1} :", modifiers, root.ClassName);
-        Boolean isFirst = true;
-        for (int i = 0; i < root.Objects.Count; i++)
-        {
-            if (root.Objects[i].IsInterface) { continue; }
-            if (!isFirst) { code.Text(","); }
-            isFirst = false;
-            code.Line();
-            code.Text("    {0}.ISerializes<{1}>", root.ClassName, root.Objects[i].ClassFullName);
-        }
-        code.Line();
+        code.Line("{0} class {1}", modifiers, root.ClassName);
         using (code.CreateBraceScope())
         {
-            code.Line($"""public interface ISerializes<T> where T : notnull""");
-            using (code.CreateBraceScope())
-            {
-                // HACK: temporarily disabled for netstandard2.0 support.
-                // code.Line("static abstract void Serialize(Utf8JsonWriter writer, T? value);");
-                // code.Line("static abstract void Deserialize(ref Utf8JsonReader reader, T value);");
-            }
-            code.Line();
-
             foreach (var node in root.Objects)
             {
                 if (node.IsInterface) { continue; }
