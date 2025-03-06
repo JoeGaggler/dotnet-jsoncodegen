@@ -498,7 +498,7 @@ internal static partial class Program
 
     private static void WriteRoot(CodeWriter code, Model.Code.Root root)
     {
-        var modifiers = root.AccessModifier is { } access ? $"{access} partial" : "partial";
+        var modifiers = root.AccessModifier is { } access ? $"{access} static partial" : "static partial";
         code.StartLine();
         code.Line("{0} class {1}", modifiers, root.ClassName);
         using (code.CreateBraceScope())
