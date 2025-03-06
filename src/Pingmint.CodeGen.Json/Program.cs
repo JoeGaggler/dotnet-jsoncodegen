@@ -481,8 +481,8 @@ internal static partial class Program
             {
                 var modifiers = type.ClassAccessModifier is { } access ? $"{access} sealed" : "sealed";
                 var which = (type.Inherit is { } inherit) ?
-                    code.PartialClass(modifiers, type.ClassName, String.Join(", ", inherit)) :
-                    code.PartialClass(modifiers, type.ClassName);
+                    code.PartialRecordClass(modifiers, type.ClassName, String.Join(", ", inherit)) :
+                    code.PartialRecordClass(modifiers, type.ClassName);
                 using (which)
                 {
                     foreach (var prop in type.Properties)

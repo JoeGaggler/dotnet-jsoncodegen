@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>0.17</Version>
+    <Version>0.18</Version>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -33,9 +33,4 @@
   <PropertyGroup>
     <NoWarn>CS8618, CS8604</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Pingmint.CodeGen.CSharp.CodeWriter" Version="0.2.0" />
-  </ItemGroup>
-
 </Project>

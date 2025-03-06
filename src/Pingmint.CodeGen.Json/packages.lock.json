@@ -1,13 +1,6 @@
 {
   "version": 1,
   "dependencies": {
-    "net9.0": {
-      "Pingmint.CodeGen.CSharp.CodeWriter": {
-        "type": "Direct",
-        "requested": "[0.2.0, )",
-        "resolved": "0.2.0",
-        "contentHash": "L95V8Po9GG0vHrKau97zu2DhlKeUNX/9L9GfTQntQJ6jFV3R4otJBsXPuEZJQcSNjWHCjzihuMVujoZqX1YHsg=="
-      }
-    }
+    "net9.0": {}
   }
 }
