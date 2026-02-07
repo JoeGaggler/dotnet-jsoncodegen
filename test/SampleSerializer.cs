@@ -5,16 +5,8 @@ using System.Text.Json;
 
 namespace Pingmint.CodeGen.Json.Test;
 
-public partial class SampleSerializer :
-    SampleSerializer.ISerializes<Subspace.Sample>,
-    SampleSerializer.ISerializes<Subspace.Meta>
+public static partial class SampleSerializer
 {
-	public interface ISerializes<T> where T : notnull
-	{
-		static abstract void Serialize(Utf8JsonWriter writer, T? value);
-		static abstract void Deserialize(ref Utf8JsonReader reader, T value);
-	}
-
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
@@ -113,21 +105,21 @@ public partial class SampleSerializer :
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.Bools = null; break; }
-						if (reader.TokenType == JsonTokenType.StartArray) { obj.Bools = Deserialize0(ref reader, obj.Bools ?? new()); break; }
+						if (reader.TokenType == JsonTokenType.StartArray) { obj.Bools = new(); Deserialize0(ref reader, obj.Bools); break; }
 						throw new InvalidOperationException($"unexpected token type for Bools: {reader.TokenType} ");
 					}
 					else if (reader.ValueTextEquals("name"))
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.Name = null; break; }
-						if (reader.TokenType == JsonTokenType.String) { obj.Name = reader.GetString(); break; }
+						if (reader.TokenType == JsonTokenType.String) { obj.Name = reader.GetString()!; break; }
 						throw new InvalidOperationException($"unexpected token type for Name: {reader.TokenType} ");
 					}
 					else if (reader.ValueTextEquals("items"))
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.Items = null; break; }
-						if (reader.TokenType == JsonTokenType.StartArray) { obj.Items = Deserialize1(ref reader, obj.Items ?? new()); break; }
+						if (reader.TokenType == JsonTokenType.StartArray) { obj.Items = new(); Deserialize1(ref reader, obj.Items); break; }
 						throw new InvalidOperationException($"unexpected token type for Items: {reader.TokenType} ");
 					}
 					else if (reader.ValueTextEquals("id"))
@@ -148,7 +140,7 @@ public partial class SampleSerializer :
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.Items2 = null; break; }
-						if (reader.TokenType == JsonTokenType.StartArray) { obj.Items2 = Deserialize2(ref reader, obj.Items2 ?? new()); break; }
+						if (reader.TokenType == JsonTokenType.StartArray) { obj.Items2 = new(); Deserialize2(ref reader, obj.Items2); break; }
 						throw new InvalidOperationException($"unexpected token type for Items2: {reader.TokenType} ");
 					}
 					else if (reader.ValueTextEquals("percent"))
@@ -169,7 +161,7 @@ public partial class SampleSerializer :
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.MetaList = null; break; }
-						if (reader.TokenType == JsonTokenType.StartArray) { obj.MetaList = Deserialize3(ref reader, obj.MetaList ?? new()); break; }
+						if (reader.TokenType == JsonTokenType.StartArray) { obj.MetaList = new(); Deserialize3(ref reader, obj.MetaList); break; }
 						throw new InvalidOperationException($"unexpected token type for MetaList: {reader.TokenType} ");
 					}
 					obj.Mapping ??= new();
@@ -212,7 +204,7 @@ public partial class SampleSerializer :
 					{
 						if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
 						if (reader.TokenType == JsonTokenType.Null) { obj.Status = null; break; }
-						if (reader.TokenType == JsonTokenType.String) { obj.Status = reader.GetString(); break; }
+						if (reader.TokenType == JsonTokenType.String) { obj.Status = reader.GetString()!; break; }
 						throw new InvalidOperationException($"unexpected token type for Status: {reader.TokenType} ");
 					}
 
@@ -236,7 +228,7 @@ public partial class SampleSerializer :
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+	private static void Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
 	{
 		while (true)
 		{
@@ -246,7 +238,7 @@ public partial class SampleSerializer :
 				case JsonTokenType.Null: { reader.Skip(); break; }
 				case JsonTokenType.True: { array.Add(true); break; }
 				case JsonTokenType.False: { array.Add(false); break; }
-				case JsonTokenType.EndArray: { return array; }
+				case JsonTokenType.EndArray: { return; }
 				default: { reader.Skip(); break; }
 			}
 		}
@@ -262,7 +254,7 @@ public partial class SampleSerializer :
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
+	private static void Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
 	{
 		while (true)
 		{
@@ -276,7 +268,7 @@ public partial class SampleSerializer :
 					array.Add(item);
 					break;
 				}
-				case JsonTokenType.EndArray: { return array; }
+				case JsonTokenType.EndArray: { return; }
 				default: { reader.Skip(); break; }
 			}
 		}
@@ -292,7 +284,7 @@ public partial class SampleSerializer :
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static void Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
 	{
 		while (true)
 		{
@@ -307,7 +299,7 @@ public partial class SampleSerializer :
 					array.Add(item);
 					break;
 				}
-				case JsonTokenType.EndArray: { return array; }
+				case JsonTokenType.EndArray: { return; }
 				default: { reader.Skip(); break; }
 			}
 		}
@@ -323,7 +315,7 @@ public partial class SampleSerializer :
 		writer.WriteEndArray();
 	}
 
-	private static TArray Deserialize3<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Meta>
+	private static void Deserialize3<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Meta>
 	{
 		while (true)
 		{
@@ -338,7 +330,7 @@ public partial class SampleSerializer :
 					array.Add(item);
 					break;
 				}
-				case JsonTokenType.EndArray: { return array; }
+				case JsonTokenType.EndArray: { return; }
 				default: { reader.Skip(); break; }
 			}
 		}

@@ -655,9 +655,9 @@ internal static partial class Program
                     }
                     case Model.Code.NodeType.Array:
                     {
-                        code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ obj.{0} = {1}; break; }}",
+                        code.Line("if (reader.TokenType == JsonTokenType.StartArray) {{ obj.{0} = new(); {1}; break; }}",
                         prop.PropertyName,
-                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName} ?? new()"));
+                        prop.ItemSetter.GetDeserializeExpression(reader, $"obj.{prop.PropertyName}"));
                         break;
                     }
                     case Model.Code.NodeType.Boolean:
@@ -715,7 +715,7 @@ internal static partial class Program
             code.Line("writer.WriteEndArray();");
         }
         code.Line();
-        code.Line($"private static TArray Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+        code.Line($"private static void Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
         using (code.CreateBraceScope())
         {
             using (code.While("true"))
@@ -762,7 +762,7 @@ internal static partial class Program
                         }
                     }
 
-                    code.Line("case JsonTokenType.EndArray: { return array; }");
+                    code.Line("case JsonTokenType.EndArray: { return; }");
                     code.Line("default: { reader.Skip(); break; }");
                 }
             }
