@@ -353,27 +353,36 @@ internal static partial class Program
 
                 if (prop.IsArray)
                 {
-                    var uniqueSuffix = $"{internalCount++}";
+                    Model.Code.ISetter propItemSetter;
+                    if (props.FirstOrDefault(p => prop.Type == p.PropertyType && p.Type == Model.Code.NodeType.Array) is { } existing)
+                    {
+                        propItemSetter = existing.ItemSetter;
+                    }
+                    else
+                    {
+                        var uniqueSuffix = $"{internalCount++}";
+                        propItemSetter = new Model.Code.InternalArraySetter(uniqueSuffix);
+                        if (!skipSerializer)
+                        {
+                            var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
+                            var array = new Model.Code.ArrayNode()
+                            {
+                                UniqueSuffix = uniqueSuffix,
+                                ItemTypeName = prop.Type,
+                                ItemSetter = itemSetter,
+                                Type = itemType,
+                            };
+                            codeArrays.Add(array);
+                        }
+                    }
                     props.Add(new()
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
                         PropertyType = prop.Type,
                         Type = Model.Code.NodeType.Array,
-                        ItemSetter = new Model.Code.InternalArraySetter(uniqueSuffix),
+                        ItemSetter = propItemSetter,
                     });
-                    if (!skipSerializer)
-                    {
-                        var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
-                        var array = new Model.Code.ArrayNode()
-                        {
-                            UniqueSuffix = uniqueSuffix,
-                            ItemTypeName = prop.Type,
-                            ItemSetter = itemSetter,
-                            Type = itemType,
-                        };
-                        codeArrays.Add(array);
-                    }
                 }
                 else if (prop.IsDictionary)
                 {
