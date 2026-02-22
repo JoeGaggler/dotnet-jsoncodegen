@@ -354,9 +354,9 @@ internal static partial class Program
                 if (prop.IsArray)
                 {
                     Model.Code.ISetter propItemSetter;
-                    if (props.FirstOrDefault(p => prop.Type == p.PropertyType && p.Type == Model.Code.NodeType.Array) is { } existing)
+                    if (codeArrays.FirstOrDefault(i => i.ItemTypeName == prop.Type) is { } existing)
                     {
-                        propItemSetter = existing.ItemSetter;
+                        propItemSetter = new Model.Code.InternalArraySetter(existing.UniqueSuffix);
                     }
                     else
                     {
