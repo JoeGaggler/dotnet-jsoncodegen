@@ -192,6 +192,8 @@ internal static partial class Program
         var codeObjects = new List<Model.Code.ObjectNode>();
         var codeArrays = new List<Model.Code.ArrayNode>();
         var codeClasses = new List<Model.Code.ClassNode>();
+        var codeJsonEncodedTexts = new SortedDictionary<String, String>();
+        var codeJsonEncodedTextPropertyNames = new HashSet<String>();
         var code = new Model.Code.Root()
         {
             ClassNamespace = syntax.ClassNamespace,
@@ -200,9 +202,11 @@ internal static partial class Program
             Arrays = codeArrays,
             Classes = codeClasses,
             AccessModifier = accessModifier,
+            JsonEncodedTexts = codeJsonEncodedTexts,
         };
 
         var internalCount = 0;
+        var internalJsonEncodedTextCount = 0;
 
         foreach (var node in syntax.Objects)
         {
@@ -276,9 +280,34 @@ internal static partial class Program
                 AddProp(prop, syntaxNode.IsInterface);
             }
 
-            // captured: codeObjects, codeArrays, internalCount, codeNode, props, classProps
+            // captured: codeObjects, codeArrays, internalCount, codeNode, props, classProps, codeJsonEncodedTexts, codeJsonEncodedTextPropertyNames
             void AddProp(Model.Syntax.PropertyNode prop, Boolean skipSerializer)
             {
+                String? cachedPropertyName = null;
+                if (!codeJsonEncodedTexts.ContainsKey(prop.Key) &&
+                    prop.Key != "*" // ignore wildcard properties
+                )
+                {
+                    if (CanEncodeJsonText(prop.Key))
+                    {
+                        var propertyKey = prop.Key;
+                        var safeName = PropertyNameRegex().Replace(propertyKey, "");
+                        var propertyName = $"JsonEncText_{safeName}";
+                        while (codeJsonEncodedTextPropertyNames.Contains(propertyName))
+                        {
+                            propertyName = $"JsonEncText_{safeName}_{internalJsonEncodedTextCount++}";
+                        }
+                        codeJsonEncodedTextPropertyNames.Add(propertyName);
+                        codeJsonEncodedTexts[propertyKey] = propertyName;
+                        cachedPropertyName = propertyName;
+                    }
+                    else
+                    {
+                        // ignore properties that do not round-trip through JsonEncodedText.Encode
+                        // TODO: consider adding a warning to the output
+                    }
+                }
+
                 classProps.Add(new()
                 {
                     Name = prop.Name,
@@ -313,6 +342,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyNameEncodedText = cachedPropertyName,
                         PropertyType = prop.Type,
                         Type = Model.Code.NodeType.Array,
                         ItemSetter = propItemSetter,
@@ -325,6 +355,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyNameEncodedText = cachedPropertyName,
                         PropertyType = prop.Type,
                     };
                     (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
@@ -336,6 +367,7 @@ internal static partial class Program
                     {
                         Key = prop.Key,
                         PropertyName = prop.Name,
+                        PropertyNameEncodedText = cachedPropertyName,
                         PropertyType = prop.Type,
                     };
                     (add.ItemSetter, add.Type) = GetTypeInfo(prop.Type, codeObjects);
@@ -504,6 +536,12 @@ internal static partial class Program
         code.Line("{0} class {1}", modifiers, root.ClassName);
         using (code.CreateBraceScope())
         {
+            foreach (var jsonEncodedText in root.JsonEncodedTexts)
+            {
+                code.Line("private static readonly JsonEncodedText {0} = JsonEncodedText.Encode(\"{1}\");", jsonEncodedText.Value, jsonEncodedText.Key);
+            }
+            code.Line();
+
             foreach (var node in root.Objects)
             {
                 if (node.IsInterface) { continue; }
@@ -531,7 +569,14 @@ internal static partial class Program
                     var localName = $"local{prop.PropertyName}";
                     using (code.If("value.{0} is {{ }} {1}", prop.PropertyName, localName))
                     {
-                        code.Line("writer.WritePropertyName(\"{0}\");", prop.Key);
+                        if (prop.PropertyNameEncodedText is { } encodedText)
+                        {
+                            code.Line("writer.WritePropertyName({0});", encodedText);
+                        }
+                        else
+                        {
+                            code.Line("writer.WritePropertyName(\"{0}\");", prop.Key);
+                        }
                         prop.ItemSetter.WriteSerializeStatement(code, "writer", localName);
                     }
                 }
@@ -771,6 +816,21 @@ internal static partial class Program
     }
 
     private static String GetShortTypeName(String fileNamespace, String typeName) => typeName.StartsWith(fileNamespace + ".") ? typeName.Substring(fileNamespace.Length + 1) : typeName;
+
+    private static Boolean CanEncodeJsonText(String json)
+    {
+        var jet = System.Text.Json.JsonEncodedText.Encode(json);
+        var jetChars = jet.EncodedUtf8Bytes.ToArray();
+
+        if (json.Length != jetChars.Length)
+        {
+            // e.g. "foo&bar" => "foo\u0026bar"
+            return false;
+        }
+
+        var jetCharString = new String([.. jetChars.Select(b => (Char)b)]);
+        return json == jetCharString;
+    }
 
     [System.Text.RegularExpressions.GeneratedRegex("[^a-zA-Z0-9_]")]
     private static partial System.Text.RegularExpressions.Regex PropertyNameRegex();

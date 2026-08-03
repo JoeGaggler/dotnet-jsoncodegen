@@ -10,6 +10,7 @@ public class Root
     public List<ObjectNode> Objects { get; set; }
     public List<ArrayNode> Arrays { get; set; }
     public List<ClassNode> Classes { get; set; }
+    public SortedDictionary<String, String> JsonEncodedTexts { get; set; } // JSON Key -> C# Property Name
 }
 
 public enum NodeType { Number, String, Boolean, Object, Array }
@@ -29,6 +30,7 @@ public class ObjectNodeProperty
 {
     public String Key { get; set; }
     public String PropertyName { get; set; }
+    public String? PropertyNameEncodedText { get; set; }
     public NodeType Type { get; set; }
     public String PropertyType { get; set; }
     public ISetter ItemSetter { get; set; } //

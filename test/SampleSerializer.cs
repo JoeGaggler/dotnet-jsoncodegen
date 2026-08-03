@@ -7,63 +7,76 @@ namespace Pingmint.CodeGen.Json.Test;
 
 public static partial class SampleSerializer
 {
+	private static readonly JsonEncodedText JsonEncText_bools = JsonEncodedText.Encode("bools");
+	private static readonly JsonEncodedText JsonEncText_count = JsonEncodedText.Encode("count");
+	private static readonly JsonEncodedText JsonEncText_id = JsonEncodedText.Encode("id");
+	private static readonly JsonEncodedText JsonEncText_isTrue = JsonEncodedText.Encode("isTrue");
+	private static readonly JsonEncodedText JsonEncText_items = JsonEncodedText.Encode("items");
+	private static readonly JsonEncodedText JsonEncText_items2 = JsonEncodedText.Encode("items2");
+	private static readonly JsonEncodedText JsonEncText_meta = JsonEncodedText.Encode("meta");
+	private static readonly JsonEncodedText JsonEncText_metaList = JsonEncodedText.Encode("metaList");
+	private static readonly JsonEncodedText JsonEncText_name = JsonEncodedText.Encode("name");
+	private static readonly JsonEncodedText JsonEncText_percent = JsonEncodedText.Encode("percent");
+	private static readonly JsonEncodedText JsonEncText_recursion = JsonEncodedText.Encode("recursion");
+	private static readonly JsonEncodedText JsonEncText_status = JsonEncodedText.Encode("status");
+
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartObject();
 		if (value.Count is { } localCount)
 		{
-			writer.WritePropertyName("count");
+			writer.WritePropertyName(JsonEncText_count);
 			writer.WriteNumberValue(localCount);
 		}
 		if (value.IsTrue is { } localIsTrue)
 		{
-			writer.WritePropertyName("isTrue");
+			writer.WritePropertyName(JsonEncText_isTrue);
 			writer.WriteBooleanValue(localIsTrue);
 		}
 		if (value.Bools is { } localBools)
 		{
-			writer.WritePropertyName("bools");
+			writer.WritePropertyName(JsonEncText_bools);
 			Serialize0(writer, localBools);
 		}
 		if (value.Name is { } localName)
 		{
-			writer.WritePropertyName("name");
+			writer.WritePropertyName(JsonEncText_name);
 			writer.WriteStringValue(localName);
 		}
 		if (value.Items is { } localItems)
 		{
-			writer.WritePropertyName("items");
+			writer.WritePropertyName(JsonEncText_items);
 			Serialize1(writer, localItems);
 		}
 		if (value.Id is { } localId)
 		{
-			writer.WritePropertyName("id");
+			writer.WritePropertyName(JsonEncText_id);
 			writer.WriteNumberValue(localId);
 		}
 		if (value.Recursion is { } localRecursion)
 		{
-			writer.WritePropertyName("recursion");
+			writer.WritePropertyName(JsonEncText_recursion);
 			Serialize(writer, localRecursion);
 		}
 		if (value.Items2 is { } localItems2)
 		{
-			writer.WritePropertyName("items2");
+			writer.WritePropertyName(JsonEncText_items2);
 			Serialize2(writer, localItems2);
 		}
 		if (value.Percent is { } localPercent)
 		{
-			writer.WritePropertyName("percent");
+			writer.WritePropertyName(JsonEncText_percent);
 			writer.WriteNumberValue(localPercent);
 		}
 		if (value.Meta is { } localMeta)
 		{
-			writer.WritePropertyName("meta");
+			writer.WritePropertyName(JsonEncText_meta);
 			Serialize(writer, localMeta);
 		}
 		if (value.MetaList is { } localMetaList)
 		{
-			writer.WritePropertyName("metaList");
+			writer.WritePropertyName(JsonEncText_metaList);
 			Serialize3(writer, localMetaList);
 		}
 		if (value.Mapping is { } localMapping)
@@ -185,7 +198,7 @@ public static partial class SampleSerializer
 		writer.WriteStartObject();
 		if (value.Status is { } localStatus)
 		{
-			writer.WritePropertyName("status");
+			writer.WritePropertyName(JsonEncText_status);
 			writer.WriteStringValue(localStatus);
 		}
 		writer.WriteEndObject();
