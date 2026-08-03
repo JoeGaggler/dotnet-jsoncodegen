@@ -177,6 +177,7 @@ public static partial class SampleSerializer
 						if (reader.TokenType == JsonTokenType.StartArray) { obj.MetaList = new(); Deserialize3(ref reader, obj.MetaList); break; }
 						throw new InvalidOperationException($"unexpected token type for MetaList: {reader.TokenType} ");
 					}
+
 					obj.Mapping ??= new();
 					var lhs = reader.GetString() ?? throw new NullReferenceException();
 					if (!reader.Read()) throw new InvalidOperationException("Unable to read next token from Utf8JsonReader");
@@ -221,7 +222,7 @@ public static partial class SampleSerializer
 						throw new InvalidOperationException($"unexpected token type for Status: {reader.TokenType} ");
 					}
 
-					reader.Skip();
+					if (!reader.Read()) { throw new InvalidOperationException("Unable to skip unknown property key from Utf8JsonReader"); }
 					reader.Skip();
 					break;
 				}

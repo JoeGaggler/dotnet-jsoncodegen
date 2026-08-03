@@ -613,12 +613,13 @@ internal static partial class Program
                             }
                             if (node.WildcardProperty is { } wildcard)
                             {
+                                code.Line();
                                 WriteWildcardProperty(code, wildcard, isFirst);
                             }
                             else
                             {
                                 code.Line();
-                                code.Line("reader.Skip();"); // move to property value
+                                code.Line("if (!reader.Read()) { throw new InvalidOperationException(\"Unable to skip unknown property key from Utf8JsonReader\"); }"); // move to property value
                                 code.Line("reader.Skip();"); // skip property value
                                 code.Line("break;");
                             }
