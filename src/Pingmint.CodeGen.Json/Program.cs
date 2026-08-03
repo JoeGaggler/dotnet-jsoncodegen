@@ -261,89 +261,23 @@ internal static partial class Program
                     {
                         throw new InvalidOperationException($"Unable to find requested type: {type}");
                     }
+
                     list.Add(foundNode.Name);
+
+                    foreach (var prop in foundNode.Properties)
+                    {
+                        AddProp(prop, skipSerializer: false);
+                    }
                 }
             }
 
-            static (Model.Code.ISetter, Model.Code.NodeType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
+            foreach (var prop in syntaxNode.Properties)
             {
-                Model.Code.ISetter itemSetter;
-                Model.Code.NodeType itemType;
-                switch (type)
-                {
-                    case "bool":
-                    case "Boolean":
-                    {
-                        itemSetter = Model.Code.BoolSetter.Instance;
-                        itemType = Model.Code.NodeType.Boolean;
-                        break;
-                    }
-                    case "int":
-                    case "Int32":
-                    {
-                        itemSetter = Model.Code.IntSetter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "long":
-                    case "Int64":
-                    {
-                        itemSetter = Model.Code.Int64Setter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "ulong":
-                    case "UInt64":
-                    {
-                        itemSetter = Model.Code.UInt64Setter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "decimal":
-                    case "Decimal":
-                    {
-                        itemSetter = Model.Code.DecimalSetter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "float":
-                    case "Single":
-                    {
-                        itemSetter = Model.Code.FloatSetter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "double":
-                    case "Double":
-                    {
-                        itemSetter = Model.Code.DoubleSetter.Instance;
-                        itemType = Model.Code.NodeType.Number;
-                        break;
-                    }
-                    case "string":
-                    case "String":
-                    {
-                        itemSetter = Model.Code.StringSetter.Instance;
-                        itemType = Model.Code.NodeType.String;
-                        break;
-                    }
-                    // TODO: array of arrays
-                    default:
-                    {
-                        var foundNode = codeObjects.FirstOrDefault(i => i.ClassFullName == type);
-                        if (foundNode == null)
-                        {
-                            throw new InvalidOperationException($"Unable to find requested type: {type}");
-                        }
-                        itemSetter = new Model.Code.InternalSetter(foundNode.ClassFullName);
-                        itemType = Model.Code.NodeType.Object;
-                        break;
-                    }
-                }
-                return (itemSetter, itemType);
+                AddProp(prop, syntaxNode.IsInterface);
             }
 
-            void AddProp(Model.Syntax.PropertyNode prop, Boolean skipSerializer = false)
+            // captured: codeObjects, codeArrays, internalCount, codeNode, props, classProps
+            void AddProp(Model.Syntax.PropertyNode prop, Boolean skipSerializer)
             {
                 classProps.Add(new()
                 {
@@ -408,31 +342,89 @@ internal static partial class Program
                     props.Add(add);
                 }
             }
-            if (syntaxNode.Inherit is { } inherit2)
-            {
-                foreach (var type in inherit2)
-                {
-                    var foundNode = syntax.Objects.FirstOrDefault(i => i.Name == type);
-                    if (foundNode == null)
-                    {
-                        throw new InvalidOperationException($"Unable to find requested type: {type}");
-                    }
-                    foreach (var prop in foundNode.Properties)
-                    {
-                        AddProp(prop);
-                    }
-                }
-            }
-
-            foreach (var prop in syntaxNode.Properties)
-            {
-                AddProp(prop, skipSerializer: syntaxNode.IsInterface);
-            }
         }
 
         if (!makeClasses) { code.Classes.Clear(); }
 
         return code;
+    }
+
+    static (Model.Code.ISetter, Model.Code.NodeType) GetTypeInfo(String type, List<Model.Code.ObjectNode> codeObjects)
+    {
+        Model.Code.ISetter itemSetter;
+        Model.Code.NodeType itemType;
+        switch (type)
+        {
+            case "bool":
+            case "Boolean":
+            {
+                itemSetter = Model.Code.BoolSetter.Instance;
+                itemType = Model.Code.NodeType.Boolean;
+                break;
+            }
+            case "int":
+            case "Int32":
+            {
+                itemSetter = Model.Code.IntSetter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "long":
+            case "Int64":
+            {
+                itemSetter = Model.Code.Int64Setter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "ulong":
+            case "UInt64":
+            {
+                itemSetter = Model.Code.UInt64Setter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "decimal":
+            case "Decimal":
+            {
+                itemSetter = Model.Code.DecimalSetter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "float":
+            case "Single":
+            {
+                itemSetter = Model.Code.FloatSetter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "double":
+            case "Double":
+            {
+                itemSetter = Model.Code.DoubleSetter.Instance;
+                itemType = Model.Code.NodeType.Number;
+                break;
+            }
+            case "string":
+            case "String":
+            {
+                itemSetter = Model.Code.StringSetter.Instance;
+                itemType = Model.Code.NodeType.String;
+                break;
+            }
+            // TODO: array of arrays
+            default:
+            {
+                var foundNode = codeObjects.FirstOrDefault(i => i.ClassFullName == type);
+                if (foundNode == null)
+                {
+                    throw new InvalidOperationException($"Unable to find requested type: {type}");
+                }
+                itemSetter = new Model.Code.InternalSetter(foundNode.ClassFullName);
+                itemType = Model.Code.NodeType.Object;
+                break;
+            }
+        }
+        return (itemSetter, itemType);
     }
 
     private static Model.Syntax.ObjectNode SyntaxObject(String name, List<Model.Syntax.PropertyNode> props) => new()
@@ -643,8 +635,8 @@ internal static partial class Program
     private static void WriteObjectNodeProperty(CodeWriter code, Model.Code.ObjectNodeProperty prop, Boolean isFirst)
     {
         var which = isFirst ?
-            code.If("reader.ValueTextEquals(\"{0}\")", prop.Key) :
-            code.ElseIf("reader.ValueTextEquals(\"{0}\")", prop.Key);
+            code.If("reader.ValueTextEquals(\"{0}\"u8)", prop.Key) :
+            code.ElseIf("reader.ValueTextEquals(\"{0}\"u8)", prop.Key);
         using (which)
         {
             var reader = "reader";
