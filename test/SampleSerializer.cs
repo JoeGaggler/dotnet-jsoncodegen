@@ -217,7 +217,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize0<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<bool>
+	private static void Serialize0(Utf8JsonWriter writer, List<bool> array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -228,7 +228,7 @@ public static partial class SampleSerializer
 		writer.WriteEndArray();
 	}
 
-	private static void Deserialize0<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<bool>
+	private static void Deserialize0(ref Utf8JsonReader reader, List<bool> array)
 	{
 		while (true)
 		{
@@ -243,7 +243,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize1<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Int64>
+	private static void Serialize1(Utf8JsonWriter writer, List<Int64> array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -254,7 +254,7 @@ public static partial class SampleSerializer
 		writer.WriteEndArray();
 	}
 
-	private static void Deserialize1<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Int64>
+	private static void Deserialize1(ref Utf8JsonReader reader, List<Int64> array)
 	{
 		while (true)
 		{
@@ -273,7 +273,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize2<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static void Serialize2(Utf8JsonWriter writer, List<Subspace.Sample> array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -284,7 +284,7 @@ public static partial class SampleSerializer
 		writer.WriteEndArray();
 	}
 
-	private static void Deserialize2<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Sample>
+	private static void Deserialize2(ref Utf8JsonReader reader, List<Subspace.Sample> array)
 	{
 		while (true)
 		{
@@ -304,7 +304,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize3<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<Subspace.Meta>
+	private static void Serialize3(Utf8JsonWriter writer, List<Subspace.Meta> array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -315,7 +315,7 @@ public static partial class SampleSerializer
 		writer.WriteEndArray();
 	}
 
-	private static void Deserialize3<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<Subspace.Meta>
+	private static void Deserialize3(ref Utf8JsonReader reader, List<Subspace.Meta> array)
 	{
 		while (true)
 		{

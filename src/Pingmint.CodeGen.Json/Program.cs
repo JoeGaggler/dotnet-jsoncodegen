@@ -704,7 +704,7 @@ internal static partial class Program
         var uniqueSuffix = node.UniqueSuffix;
         var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        code.Line($"private static void Serialize{uniqueSuffix}<TArray>(Utf8JsonWriter writer, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+        code.Line($"private static void Serialize{uniqueSuffix}(Utf8JsonWriter writer, List<{internalSerializerItemType}> array)");
         using (code.CreateBraceScope())
         {
             code.Line("if (array is null) { writer.WriteNullValue(); return; }");
@@ -716,7 +716,7 @@ internal static partial class Program
             code.Line("writer.WriteEndArray();");
         }
         code.Line();
-        code.Line($"private static void Deserialize{uniqueSuffix}<TArray>(ref Utf8JsonReader reader, TArray array) where TArray : ICollection<{internalSerializerItemType}>");
+        code.Line($"private static void Deserialize{uniqueSuffix}(ref Utf8JsonReader reader, List<{internalSerializerItemType}> array)");
         using (code.CreateBraceScope())
         {
             using (code.While("true"))
