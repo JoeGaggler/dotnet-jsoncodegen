@@ -288,7 +288,11 @@ internal static partial class Program
                     prop.Key != "*" // ignore wildcard properties
                 )
                 {
-                    if (CanEncodeJsonText(prop.Key))
+                    if (codeJsonEncodedTexts.TryGetValue(prop.Key, out var existingPropertyName))
+                    {
+                        cachedPropertyName = existingPropertyName;
+                    }
+                    else if (CanEncodeJsonText(prop.Key))
                     {
                         var propertyKey = prop.Key;
                         var safeName = PropertyNameRegex().Replace(propertyKey, "");
@@ -542,6 +546,13 @@ internal static partial class Program
             }
             code.Line();
 
+            using (code.Method("private static", "void", "SkipUnknownPropertyName", "ref Utf8JsonReader reader"))
+            {
+                code.Line("if (!reader.Read()) { throw new InvalidOperationException(\"Unable to skip unknown property key from Utf8JsonReader\"); }");
+                code.Line("reader.Skip();"); // skip property value
+            }
+            code.Line();
+
             foreach (var node in root.Objects)
             {
                 if (node.IsInterface) { continue; }
@@ -619,8 +630,7 @@ internal static partial class Program
                             else
                             {
                                 code.Line();
-                                code.Line("if (!reader.Read()) { throw new InvalidOperationException(\"Unable to skip unknown property key from Utf8JsonReader\"); }"); // move to property value
-                                code.Line("reader.Skip();"); // skip property value
+                                code.Line("SkipUnknownPropertyName(ref reader);");
                                 code.Line("break;");
                             }
                         }
@@ -750,7 +760,7 @@ internal static partial class Program
         var uniqueSuffix = node.UniqueSuffix;
         var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        code.Line($"private static void Serialize{uniqueSuffix}(Utf8JsonWriter writer, List<{internalSerializerItemType}> array)");
+        code.Line($"private static void Serialize{uniqueSuffix}(Utf8JsonWriter writer, List<{internalSerializerItemType}>? array)");
         using (code.CreateBraceScope())
         {
             code.Line("if (array is null) { writer.WriteNullValue(); return; }");

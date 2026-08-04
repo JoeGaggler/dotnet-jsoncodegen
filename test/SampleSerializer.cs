@@ -20,6 +20,12 @@ public static partial class SampleSerializer
 	private static readonly JsonEncodedText JsonEncText_recursion = JsonEncodedText.Encode("recursion");
 	private static readonly JsonEncodedText JsonEncText_status = JsonEncodedText.Encode("status");
 
+	private static void SkipUnknownPropertyName(ref Utf8JsonReader reader)
+	{
+		if (!reader.Read()) { throw new InvalidOperationException("Unable to skip unknown property key from Utf8JsonReader"); }
+		reader.Skip();
+	}
+
 	public static void Serialize(Utf8JsonWriter writer, Subspace.Sample? value)
 	{
 		if (value is null) { writer.WriteNullValue(); return; }
@@ -222,8 +228,7 @@ public static partial class SampleSerializer
 						throw new InvalidOperationException($"unexpected token type for Status: {reader.TokenType} ");
 					}
 
-					if (!reader.Read()) { throw new InvalidOperationException("Unable to skip unknown property key from Utf8JsonReader"); }
-					reader.Skip();
+					SkipUnknownPropertyName(ref reader);
 					break;
 				}
 				case JsonTokenType.EndObject: { return; }
@@ -231,7 +236,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize0(Utf8JsonWriter writer, List<bool> array)
+	private static void Serialize0(Utf8JsonWriter writer, List<bool>? array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -257,7 +262,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize1(Utf8JsonWriter writer, List<Int64> array)
+	private static void Serialize1(Utf8JsonWriter writer, List<Int64>? array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -287,7 +292,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize2(Utf8JsonWriter writer, List<Subspace.Sample> array)
+	private static void Serialize2(Utf8JsonWriter writer, List<Subspace.Sample>? array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
@@ -318,7 +323,7 @@ public static partial class SampleSerializer
 			}
 		}
 	}
-	private static void Serialize3(Utf8JsonWriter writer, List<Subspace.Meta> array)
+	private static void Serialize3(Utf8JsonWriter writer, List<Subspace.Meta>? array)
 	{
 		if (array is null) { writer.WriteNullValue(); return; }
 		writer.WriteStartArray();
