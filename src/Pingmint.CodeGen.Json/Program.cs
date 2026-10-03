@@ -284,9 +284,7 @@ internal static partial class Program
             void AddProp(Model.Syntax.PropertyNode prop, Boolean skipSerializer)
             {
                 String? cachedPropertyName = null;
-                if (!codeJsonEncodedTexts.ContainsKey(prop.Key) &&
-                    prop.Key != "*" // ignore wildcard properties
-                )
+                if (prop.Key != "*") // ignore wildcard properties
                 {
                     if (codeJsonEncodedTexts.TryGetValue(prop.Key, out var existingPropertyName))
                     {
