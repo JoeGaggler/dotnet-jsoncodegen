@@ -16,7 +16,7 @@ Here is an example JSON document that we want to work with:
     "name": "Joe",
     "children": [
         { "id": 2, "name": "Morgan" },
-        { "id": 2, "name": "Casey" },
+        { "id": 3, "name": "Casey" },
     ]
 }
 ```

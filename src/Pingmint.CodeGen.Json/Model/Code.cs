@@ -38,7 +38,6 @@ public class ObjectNodeProperty
 
 public class ArrayNode
 {
-    public String UniqueSuffix { get; set; }
     public String ItemTypeName { get; set; }
     public ISetter ItemSetter { get; set; }
     public NodeType Type { get; set; }
@@ -196,22 +195,19 @@ public class InternalSetter : ISetter
 
 public class InternalArraySetter : ISetter
 {
-    private readonly String uniqueSuffix;
-
-    public InternalArraySetter(String uniqueSuffix)
+    public InternalArraySetter()
     {
-        this.uniqueSuffix = uniqueSuffix;
     }
 
     public String GetDeserializeExpression(String reader, String? target) =>
-        String.Format("Deserialize{0}(ref {1}, {2})", this.uniqueSuffix, reader, target);
+        String.Format("Deserialize(ref {0}, {1})", reader, target);
 
     public void WriteDeserializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String reader, String type, String target)
     {
         code.Line("{0} {1} = new();", type, target);
-        code.Line("Deserialize{0}(ref {1}, {2});", this.uniqueSuffix, reader, target);
+        code.Line("Deserialize(ref {0}, {1});", reader, target);
     }
 
     public void WriteSerializeStatement(Pingmint.CodeGen.CSharp.CodeWriter code, String writer, String value) =>
-        code.Line("Serialize{0}({1}, {2});", this.uniqueSuffix, writer, value);
+        code.Line("Serialize({0}, {1});", writer, value);
 }

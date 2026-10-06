@@ -205,7 +205,6 @@ internal static partial class Program
             JsonEncodedTexts = codeJsonEncodedTexts,
         };
 
-        var internalCount = 0;
         var internalJsonEncodedTextCount = 0;
 
         foreach (var node in syntax.Objects)
@@ -321,18 +320,16 @@ internal static partial class Program
                     Model.Code.ISetter propItemSetter;
                     if (codeArrays.FirstOrDefault(i => i.ItemTypeName == prop.Type) is { } existing)
                     {
-                        propItemSetter = new Model.Code.InternalArraySetter(existing.UniqueSuffix);
+                        propItemSetter = new Model.Code.InternalArraySetter();
                     }
                     else
                     {
-                        var uniqueSuffix = $"{internalCount++}";
-                        propItemSetter = new Model.Code.InternalArraySetter(uniqueSuffix);
+                        propItemSetter = new Model.Code.InternalArraySetter();
                         if (!skipSerializer)
                         {
                             var (itemSetter, itemType) = GetTypeInfo(prop.Type, codeObjects);
                             var array = new Model.Code.ArrayNode()
                             {
-                                UniqueSuffix = uniqueSuffix,
                                 ItemTypeName = prop.Type,
                                 ItemSetter = itemSetter,
                                 Type = itemType,
@@ -755,10 +752,9 @@ internal static partial class Program
 
     private static void WriteArrayNode(CodeWriter code, Model.Code.ArrayNode node)
     {
-        var uniqueSuffix = node.UniqueSuffix;
         var internalSerializerItemType = node.ItemTypeName;
         var reader = "reader";
-        code.Line($"private static void Serialize{uniqueSuffix}(Utf8JsonWriter writer, List<{internalSerializerItemType}>? array)");
+        code.Line($"public static void Serialize(Utf8JsonWriter writer, List<{internalSerializerItemType}>? array)");
         using (code.CreateBraceScope())
         {
             code.Line("if (array is null) { writer.WriteNullValue(); return; }");
@@ -770,7 +766,7 @@ internal static partial class Program
             code.Line("writer.WriteEndArray();");
         }
         code.Line();
-        code.Line($"private static void Deserialize{uniqueSuffix}(ref Utf8JsonReader reader, List<{internalSerializerItemType}> array)");
+        code.Line($"public static void Deserialize(ref Utf8JsonReader reader, List<{internalSerializerItemType}> array)");
         using (code.CreateBraceScope())
         {
             using (code.While("true"))
